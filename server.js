@@ -11,6 +11,7 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.static(path.join(__dirname, "public")));
+app.use("/vendor/three", express.static(path.join(__dirname, "node_modules/three/build")));
 app.get("/board-data", (req, res) => res.json(BOARD));
 app.get("/health", (req, res) => res.send("ok"));
 
@@ -122,7 +123,21 @@ io.on("connection", (socket) => {
 
   socket.on("propose_trade", ({ toId, offer }, cb) => {
     const game = rooms.get(currentRoomId);
-    const result = game.executeTrade(playerId, toId, offer);
+    const result = game ? game.proposeTrade(playerId, toId, offer) : { error: "Join a room first" };
+    if (cb) cb(result);
+    broadcast(currentRoomId);
+  });
+
+  socket.on("respond_trade", ({ accept }, cb) => {
+    const game = rooms.get(currentRoomId);
+    const result = game ? game.respondTrade(playerId, !!accept) : { error: "Join a room first" };
+    if (cb) cb(result);
+    broadcast(currentRoomId);
+  });
+
+  socket.on("cancel_trade", (_, cb) => {
+    const game = rooms.get(currentRoomId);
+    const result = game ? game.cancelTrade(playerId) : { error: "Join a room first" };
     if (cb) cb(result);
     broadcast(currentRoomId);
   });

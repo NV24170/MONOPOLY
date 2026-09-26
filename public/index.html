@@ -2,16 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Monopoly Online</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>CCP Monopoly</title>
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
 <div id="lobby" class="screen">
   <div class="lobby-box">
-    <div class="brand-mark">M</div>
-    <h1>Monopoly Online</h1>
+    <img class="brand-logo" src="/ccp-monopoly.svg" alt="CCP Monopoly">
+    <h1>CCP Monopoly</h1>
     <p class="lobby-tagline">Buy well. Build evenly. Stay in the game.</p>
     <input id="nameInput" placeholder="Your name" maxlength="16" />
     <input id="roomInput" placeholder="Room code (e.g. abc123)" maxlength="20" />
@@ -32,7 +32,7 @@
 <div id="game" class="screen hidden">
   <div class="game-layout">
     <aside class="room-column">
-      <div class="room-brand"><span class="brand-mark">M</span><span>Monopoly Online</span></div>
+      <div class="room-brand"><img class="room-logo" src="/ccp-monopoly.svg" alt=""><span>CCP Monopoly</span></div>
       <section class="room-share">
         <div class="panel-heading">Share this game</div>
         <div class="share-row"><input id="shareLink" readonly aria-label="Room link"><button id="copyRoomBtn" title="Copy room link">Copy</button></div>
@@ -72,7 +72,10 @@
         </div>
       </div>
       <div class="dice-area">
-        <div id="diceDisplay" class="dice-display">🎲 🎲</div>
+        <div id="diceStage" class="dice-stage" role="img" aria-label="Animated dice">
+          <div id="dice3d" class="dice-canvas"></div>
+        </div>
+        <div id="diceDisplay" class="dice-display" aria-live="polite">Roll to begin</div>
         <button id="rollBtn">Roll Dice</button>
         <button id="buyBtn" class="hidden">Buy Property</button>
         <button id="declineBtn" class="hidden">Decline</button>
@@ -83,7 +86,12 @@
     </main>
 
     <aside class="sidebar">
-      <div class="panel-block players-panel"><div class="panel-heading">Players</div><div id="players" class="players"></div></div>
+      <div class="panel-block players-panel"><div class="players-panel-head"><div class="panel-heading">Players</div><button id="tradeOpenBtn" type="button">Trade</button></div><div id="players" class="players"></div></div>
+      <div id="tradeOfferPanel" class="panel-block trade-offer-panel hidden" aria-live="polite">
+        <h3 id="tradeOfferTitle">Trade offer</h3>
+        <p id="tradeOfferText"></p>
+        <div class="trade-response-buttons"><button id="acceptTradeBtn" type="button">Accept</button><button id="rejectTradeBtn" type="button">Decline</button><button id="cancelTradeBtn" type="button">Cancel offer</button></div>
+      </div>
       <div id="auctionArea" class="hidden">
         <h3>Auction: <span id="auctionSpaceName"></span></h3>
         <p>Highest bid: $<span id="auctionHighBid">0</span> by <span id="auctionHighBidder">-</span></p>
@@ -112,6 +120,18 @@
     </div>
   </div>
 </div>
+
+<dialog id="tradeDialog" class="trade-dialog" aria-labelledby="tradeDialogTitle">
+  <div class="trade-dialog-head"><div><div class="eyebrow">Negotiation</div><h2 id="tradeDialogTitle">Propose a trade</h2></div><button id="tradeCloseBtn" class="dialog-close" type="button" aria-label="Close">×</button></div>
+  <label class="trade-target-label" for="tradeTarget">Trade with</label>
+  <select id="tradeTarget"></select>
+  <div class="trade-grid">
+    <section class="trade-side"><h3>You offer</h3><label for="tradeFromCash">Cash</label><input id="tradeFromCash" type="number" min="0" step="1" value="0"><div id="tradeFromProps" class="trade-property-list"></div></section>
+    <section class="trade-side"><h3>In return</h3><label for="tradeToCash">Cash</label><input id="tradeToCash" type="number" min="0" step="1" value="0"><div id="tradeToProps" class="trade-property-list"></div></section>
+  </div>
+  <p id="tradeDialogError" class="trade-error" aria-live="polite"></p>
+  <div class="trade-dialog-actions"><button id="tradeCancelBtn" type="button">Cancel</button><button id="tradeSendBtn" type="button">Send offer</button></div>
+</dialog>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="client.js"></script>

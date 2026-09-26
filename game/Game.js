@@ -22,7 +22,10 @@ class Game {
     this.chanceDeck = shuffle(CHANCE_CARDS);
     this.chestDeck = shuffle(COMMUNITY_CHEST_CARDS);
     this.lastRoll = null;
+    this.rollSequence = 0;
     this.pendingAuction = null; // { spaceId, highestBid, highestBidder, order, currentBidderIdx, passed:Set }
+    this.pendingTrade = null;
+    this.pendingTrade = null;
     this.freeParkingPot = 0;
     this.rules = {
       auctionOnDecline: true,
@@ -49,6 +52,10 @@ class Game {
   removePlayer(id) {
     const p = this.getPlayer(id);
     if (p) p.bankrupt = true; // simplest: treat disconnect as forfeit if game running
+    if (this.pendingTrade && [this.pendingTrade.fromId, this.pendingTrade.toId].includes(id)) {
+      this.pendingTrade = null;
+      this.addLog("A pending trade was cancelled because a player left.");
+    }
     this.players = this.started ? this.players : this.players.filter(pl => pl.id !== id);
   }
 
@@ -94,6 +101,7 @@ class Game {
     const d2 = 1 + Math.floor(Math.random() * 6);
     const isDouble = d1 === d2;
     this.lastRoll = [d1, d2];
+    this.rollSequence++;
 
     if (player.inJail) {
       return this.handleJailRoll(player, d1, d2, isDouble);
@@ -529,32 +537,90 @@ class Game {
     return { ok: true };
   }
 
-  // ---- Trading (simple direct offer, both sides must own what they offer) ----
-  executeTrade(fromId, toId, offer) {
-    // offer: { fromCash, toCash, fromProps:[ids], toProps:[ids] }
+  // ---- Trading ----
+  validateTrade(fromId, toId, offer) {
     const from = this.getPlayer(fromId);
     const to = this.getPlayer(toId);
-    if (!from || !to) return { error: "Invalid players" };
-    if (from.cash < (offer.fromCash || 0) || to.cash < (offer.toCash || 0)) return { error: "Insufficient cash" };
-    for (const id of offer.fromProps || []) {
-      if (!this.ownership[id] || this.ownership[id].ownerId !== fromId) return { error: "Trade invalid: property ownership mismatch" };
+    if (!from || !to || fromId === toId || from.bankrupt || to.bankrupt) return { error: "Choose another active player" };
+    if (!offer || typeof offer !== "object") return { error: "Trade offer is invalid" };
+
+    const fromCash = offer.fromCash ?? 0;
+    const toCash = offer.toCash ?? 0;
+    const fromProps = offer.fromProps ?? [];
+    const toProps = offer.toProps ?? [];
+    if (!Number.isSafeInteger(fromCash) || !Number.isSafeInteger(toCash) || fromCash < 0 || toCash < 0) {
+      return { error: "Cash amounts must be whole dollars" };
     }
-    for (const id of offer.toProps || []) {
-      if (!this.ownership[id] || this.ownership[id].ownerId !== toId) return { error: "Trade invalid: property ownership mismatch" };
+    if (!Array.isArray(fromProps) || !Array.isArray(toProps)) return { error: "Properties must be selected from the list" };
+    if (new Set(fromProps).size !== fromProps.length || new Set(toProps).size !== toProps.length) return { error: "A property can only be offered once" };
+    if (fromProps.some(id => toProps.includes(id))) return { error: "The same property cannot be offered by both players" };
+    if (!fromCash && !toCash && !fromProps.length && !toProps.length) return { error: "Add cash or property to the offer" };
+    if (from.cash < fromCash || to.cash < toCash) return { error: "One player no longer has enough cash" };
+
+    for (const [playerId, propertyIds] of [[fromId, fromProps], [toId, toProps]]) {
+      for (const id of propertyIds) {
+        if (!Number.isInteger(id) || !BOARD[id] || this.ownership[id]?.ownerId !== playerId) {
+          return { error: "A selected property is no longer owned by that player" };
+        }
+        const property = this.ownership[id];
+        if (property.houses || property.hotel) return { error: "Sell buildings before trading properties" };
+        const group = BOARD[id].group;
+        if (group && BOARD.some(space => space.group === group && this.ownership[space.id]?.ownerId === playerId && (this.ownership[space.id].houses || this.ownership[space.id].hotel))) {
+          return { error: "Sell all buildings in a color group before trading its properties" };
+        }
+      }
     }
-    from.cash += (offer.toCash || 0) - (offer.fromCash || 0);
-    to.cash += (offer.fromCash || 0) - (offer.toCash || 0);
-    (offer.fromProps || []).forEach(id => {
-      this.ownership[id].ownerId = toId;
-      from.properties = from.properties.filter(p => p !== id);
+    return { offer: { fromCash, toCash, fromProps: [...fromProps], toProps: [...toProps] }, from, to };
+  }
+
+  proposeTrade(fromId, toId, offer) {
+    if (!this.started) return { error: "Start the game before trading" };
+    if (this.pendingTrade) return { error: "Another trade is already awaiting a response" };
+    const checked = this.validateTrade(fromId, toId, offer);
+    if (checked.error) return { error: checked.error };
+    this.pendingTrade = { fromId, toId, offer: checked.offer, createdAt: Date.now() };
+    this.addLog(`${checked.from.name} sent a trade offer to ${checked.to.name}.`);
+    return { ok: true };
+  }
+
+  respondTrade(playerId, accept) {
+    const pending = this.pendingTrade;
+    if (!pending || pending.toId !== playerId) return { error: "There is no trade offer for you" };
+    if (!accept) {
+      this.pendingTrade = null;
+      this.addLog(`${this.getPlayer(playerId).name} declined the trade offer.`);
+      return { ok: true, accepted: false };
+    }
+
+    const checked = this.validateTrade(pending.fromId, pending.toId, pending.offer);
+    if (checked.error) {
+      this.pendingTrade = null;
+      this.addLog("A trade expired because its cash or property changed.");
+      return { error: checked.error };
+    }
+    const { from, to } = checked;
+    const { fromCash, toCash, fromProps, toProps } = checked.offer;
+    from.cash += toCash - fromCash;
+    to.cash += fromCash - toCash;
+    fromProps.forEach(id => {
+      this.ownership[id].ownerId = to.id;
+      from.properties = from.properties.filter(propertyId => propertyId !== id);
       to.properties.push(id);
     });
-    (offer.toProps || []).forEach(id => {
-      this.ownership[id].ownerId = fromId;
-      to.properties = to.properties.filter(p => p !== id);
+    toProps.forEach(id => {
+      this.ownership[id].ownerId = from.id;
+      to.properties = to.properties.filter(propertyId => propertyId !== id);
       from.properties.push(id);
     });
+    this.pendingTrade = null;
     this.addLog(`${from.name} and ${to.name} completed a trade.`);
+    return { ok: true, accepted: true };
+  }
+
+  cancelTrade(playerId) {
+    if (!this.pendingTrade || this.pendingTrade.fromId !== playerId) return { error: "You have no trade offer to cancel" };
+    this.pendingTrade = null;
+    this.addLog(`${this.getPlayer(playerId).name} cancelled the trade offer.`);
     return { ok: true };
   }
 
@@ -572,6 +638,9 @@ class Game {
 
   declareBankruptcy(player, creditor) {
     player.bankrupt = true;
+    if (this.pendingTrade && [this.pendingTrade.fromId, this.pendingTrade.toId].includes(player.id)) {
+      this.pendingTrade = null;
+    }
     this.addLog(`${player.name} has gone bankrupt!`);
     if (creditor) {
       creditor.cash += Math.max(player.cash, 0);
@@ -632,8 +701,14 @@ class Game {
       turnIndex: this.turnIndex,
       currentPlayerId: this.players[this.turnIndex] ? this.players[this.turnIndex].id : null,
       lastRoll: this.lastRoll,
+      rollSequence: this.rollSequence,
       log: this.log.slice(-30),
       pendingAuction: this.pendingAuction,
+      pendingTrade: this.pendingTrade ? {
+        fromId: this.pendingTrade.fromId,
+        toId: this.pendingTrade.toId,
+        offer: this.pendingTrade.offer,
+      } : null,
       freeParkingPot: this.freeParkingPot,
       rules: this.rules,
     };

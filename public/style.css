@@ -421,7 +421,9 @@ body { color: var(--ink); background: #130f1b; background-image: radial-gradient
   .player-location { font-size: 9px; }
 }
 .center-room { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 12px; text-align: center; }
-.center-room strong { color: #cbb8fa; font: 800 clamp(17px, 2.6vw, 29px) "Trebuchet MS", sans-serif; }
+.brand-logo { display: block; width: 112px; height: 112px; margin: 0 auto 9px; object-fit: contain; filter: drop-shadow(0 9px 22px #08050b70); }
+.room-brand .room-logo { width: 38px; height: 38px; flex: 0 0 38px; object-fit: contain; }
+.center-room .center-logo { display: block; width: clamp(62px, 8vw, 94px); height: clamp(62px, 8vw, 94px); object-fit: contain; filter: drop-shadow(0 8px 19px #07040a88); }
 .center-room > span { color: #a99dbb; font-size: 11px; font-weight: 500; letter-spacing: 0; }
 .center-room button { min-height: 36px; padding: 0 15px; border: 0; border-radius: 4px; color: #fff; background: #7140d5; font-size: 11px; font-weight: 700; cursor: pointer; }
 .center-room button:hover:not(:disabled) { background: #8050e5; }
@@ -473,4 +475,114 @@ body { color: var(--ink); background: #130f1b; background-image: radial-gradient
 @keyframes turn-pulse { 0%, 100% { outline-color: #f2d080; } 50% { outline-color: #f2d08055; } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+.dice-stage { width: min(100%, 290px); height: 96px; flex: 0 0 100%; margin: -2px auto 0; }
+.dice-canvas, .dice-canvas canvas { display: block; width: 100%; height: 100%; }
+.dice-display { min-width: 100%; margin: 0 0 2px; color: #ded4ef; font-size: 12px; font-variant-numeric: tabular-nums; }
+.dice-fallback .dice-canvas { display: none; }
+@media (max-width: 500px) {
+  .dice-stage { width: min(100%, 270px); height: 82px; }
+  .dice-display { font-size: 11px; }
+}
+
+@media (min-width: 721px) and (max-width: 1100px) and (orientation: portrait) {
+  .game-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    padding: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+  }
+  .table-column { grid-column: 1; grid-row: 1; }
+  .board { width: min(100%, 760px, calc(100svh - 220px)); }
+  .sidebar {
+    display: grid;
+    grid-column: 1;
+    grid-row: 2;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    height: auto;
+    overflow: visible;
+  }
+  .sidebar .players-panel, .sidebar .manage { grid-column: 1; }
+  .sidebar .room-settings, .sidebar .rules-summary { grid-column: 2; }
+  .sidebar #auctionArea, .sidebar .log { grid-column: 1 / -1; }
+  .room-column {
+    grid-column: 1;
+    grid-row: 3;
+    grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr);
+    grid-template-rows: auto minmax(220px, 1fr);
+    height: 300px;
+  }
+  .room-brand { grid-column: 1 / -1; }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  #lobby { padding: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); }
+  .lobby-box input:not([type="checkbox"]), .share-row input, .chat input, .manage select, #auctionArea input { min-height: 44px; font-size: 16px; }
+  .lobby-box button, .dice-area button, .manage-buttons button, #auctionArea button, .share-row button, .chat-input-row button, .center-room button, .join-game-button { min-height: 44px; }
+  .chat-input-row { grid-template-columns: minmax(0, 1fr) 44px; }
+  .appearance-colors { grid-template-columns: repeat(4, 42px); gap: 13px 18px; }
+  .appearance-color { width: 42px; height: 42px; }
+  .room-settings .rule-toggle { min-height: 44px; }
+  .room-settings .rule-toggle input { width: 20px; height: 20px; }
+}
+
+.players-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.players-panel-head .panel-heading { margin: 0; text-align: left; }
+#tradeOpenBtn, .trade-response-buttons button, .trade-dialog-actions button {
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid #493765;
+  border-radius: 5px;
+  color: #f3eff9;
+  background: #35264b;
+  font-size: 11px;
+  font-weight: 700;
+}
+#tradeOpenBtn:hover, .trade-response-buttons button:hover, .trade-dialog-actions button:hover { background: #46315f; }
+.trade-offer-panel { border-color: #60498a; background: #29203b; }
+.trade-offer-panel h3 { margin: 0 0 6px; color: #d9c6ff; font: 700 14px "Trebuchet MS", sans-serif; }
+.trade-offer-panel p { margin: 0 0 10px; color: #d0c7dc; font-size: 11px; line-height: 1.45; }
+.trade-response-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+.trade-response-buttons #acceptTradeBtn, .trade-dialog-actions #tradeSendBtn { border-color: #6b49ab; background: #7140d5; }
+.trade-response-buttons #acceptTradeBtn:hover, .trade-dialog-actions #tradeSendBtn:hover { background: #8050e5; }
+.trade-dialog {
+  width: min(560px, calc(100vw - 28px));
+  max-height: min(88dvh, 760px);
+  overflow: auto;
+  padding: 20px;
+  border: 1px solid #57466f;
+  border-radius: 9px;
+  color: #f1edf8;
+  background: #211a30;
+  box-shadow: 0 24px 80px #08060dcc;
+}
+.trade-dialog::backdrop { background: #08060db8; backdrop-filter: blur(4px); }
+.trade-dialog-head { display: flex; align-items: start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.trade-dialog-head .eyebrow { margin-bottom: 4px; color: #b49ae9; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; }
+.trade-dialog-head h2 { margin: 0; color: #fff; font: 700 22px Georgia, serif; }
+.trade-dialog .dialog-close { width: 36px; min-height: 36px; padding: 0; border: 0; border-radius: 5px; color: #d2c8e0; background: transparent; font-size: 24px; cursor: pointer; }
+.trade-target-label, .trade-side > label { display: block; margin: 0 0 6px; color: #beb2ce; font-size: 11px; }
+.trade-dialog select, .trade-dialog input[type="number"] { width: 100%; min-height: 38px; padding: 0 10px; border: 1px solid #453956; border-radius: 5px; color: #f2edf8; background: #17121f; }
+.trade-dialog select { margin-bottom: 14px; }
+.trade-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.trade-side { min-width: 0; padding: 11px; border: 1px solid #3e334f; border-radius: 6px; background: #261f35; }
+.trade-side h3 { margin: 0 0 9px; color: #d2baff; font-size: 12px; }
+.trade-property-list { display: grid; max-height: 190px; gap: 3px; overflow-y: auto; margin-top: 8px; }
+.trade-property-option { display: flex; min-height: 30px; align-items: center; gap: 7px; padding: 4px; border-radius: 4px; color: #d6cede; font-size: 10px; cursor: pointer; }
+.trade-property-option:hover { background: #ffffff0b; }
+.trade-property-option input { accent-color: #895cf0; }
+.trade-empty { padding: 6px 2px; color: #968ba5; font-size: 10px; }
+.trade-error { min-height: 17px; margin: 9px 0; color: #ff9aa5; font-size: 11px; }
+.trade-dialog-actions { display: flex; justify-content: end; gap: 7px; }
+.trade-dialog-actions #tradeSendBtn { color: #fff; }
+@media (max-width: 500px) {
+  .trade-dialog { padding: 14px; }
+  .trade-grid { grid-template-columns: minmax(0, 1fr); }
+  .trade-property-list { max-height: 130px; }
+}
+@media (hover: none) and (pointer: coarse) {
+  #tradeOpenBtn, .trade-response-buttons button, .trade-dialog-actions button, .trade-dialog .dialog-close { min-height: 44px; }
+  .trade-property-option { min-height: 42px; font-size: 12px; }
+  .trade-dialog select, .trade-dialog input[type="number"] { min-height: 44px; font-size: 16px; }
+  .trade-property-option input { width: 19px; height: 19px; }
 }

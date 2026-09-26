@@ -1,4 +1,4 @@
-# Monopoly Online
+# CCP Monopoly
 
 Real-time multiplayer Monopoly (Node.js + Express + Socket.io). Built to deploy on [Render](https://render.com) as a Web Service.
 
@@ -34,12 +34,11 @@ Then open http://localhost:3000 in multiple tabs to test with several players.
 - Jail (pay/roll doubles/use card, 3-doubles rule)
 - Chance & Community Chest (all 32 official cards)
 - Bankruptcy (to a player or to the bank) and win detection
-- Basic direct player-to-player trading (cash + properties) via `propose_trade` socket event — no trade UI is wired up yet, so it currently needs to be triggered from a custom client call or extended with a trade modal
+- Player-to-player trade proposals with cash and property offers, recipient acceptance/rejection, cancellation, and server-side validation
 - Toggleable rules: auction-on-decline, vacation cash (Free Parking pot), x2 rent on unimproved monopolies
 
 ## Known simplifications / next steps
 - No reconnect/resume-session handling — a page refresh drops you from the room (add player tokens + localStorage session id to fix)
-- Trading has no UI (logic is server-ready, just needs a modal in `client.js`)
 - No spectator mode or room persistence across server restarts (in-memory only — fine for a single Render instance, but a restart clears active games)
 - Selling a hotel currently converts it straight to 4 houses rather than enforcing even sell-down across the group first
 

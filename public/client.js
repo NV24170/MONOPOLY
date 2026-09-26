@@ -4,7 +4,17 @@ let BOARD = [];
 let myId = null;
 let currentState = null;
 let selectedColor = null;
+let diceAnimator = null;
+let lastAnimatedRollSequence = 0;
 const PLAYER_COLORS = ["#c1dd4b", "#f8c845", "#ff8741", "#d84a4c", "#54a3e3", "#5dd8df", "#15aa9a", "#69e153", "#aa7e68", "#db49ab", "#f56e97", "#7851dc"];
+
+import("./dice3d.js").then(({ createDiceAnimator }) => {
+  diceAnimator = createDiceAnimator(document.getElementById("dice3d"));
+  if (!diceAnimator) document.getElementById("diceStage").classList.add("dice-fallback");
+  else if (currentState?.lastRoll) diceAnimator.rollTo(currentState.lastRoll);
+}).catch(() => {
+  document.getElementById("diceStage").classList.add("dice-fallback");
+});
 
 const GROUP_COLORS = {
   brown: "#955436", lightblue: "#aae0fa", pink: "#d93a96", orange: "#f7941d",
@@ -52,7 +62,7 @@ function renderBoardShell() {
   });
   const center = document.createElement("div");
   center.className = "center-cell";
-  center.innerHTML = `<div class="center-room"><strong>MONOPOLY</strong><span id="centerRoomMessage">Waiting for players</span><button id="roomStartBtn" disabled>Start Game</button></div>`;
+  center.innerHTML = `<div class="center-room"><img class="center-logo" src="/ccp-monopoly.svg" alt="CCP Monopoly"><span id="centerRoomMessage">Waiting for players</span><button id="roomStartBtn" disabled>Start Game</button></div>`;
   board.appendChild(center);
   document.getElementById("roomStartBtn").onclick = startRoomGame;
   document.querySelectorAll(".appearance-color").forEach(button => {
@@ -198,6 +208,114 @@ document.getElementById("unmortgageBtn").onclick = () => {
   socket.emit("unmortgage_property", { spaceId }, logIfError);
 };
 
+document.getElementById("tradeOpenBtn").onclick = openTradeDialog;
+document.getElementById("tradeCloseBtn").onclick = () => document.getElementById("tradeDialog").close();
+document.getElementById("tradeCancelBtn").onclick = () => document.getElementById("tradeDialog").close();
+document.getElementById("tradeTarget").addEventListener("change", renderTradeProperties);
+document.getElementById("tradeSendBtn").onclick = sendTradeOffer;
+document.getElementById("acceptTradeBtn").onclick = () => socket.emit("respond_trade", { accept: true }, logIfError);
+document.getElementById("rejectTradeBtn").onclick = () => socket.emit("respond_trade", { accept: false }, logIfError);
+document.getElementById("cancelTradeBtn").onclick = () => socket.emit("cancel_trade", {}, logIfError);
+
+function openTradeDialog() {
+  if (!currentState || !myId || currentState.pendingTrade) return;
+  const me = currentState.players.find(player => player.id === myId);
+  const opponents = currentState.players.filter(player => player.id !== myId && !player.bankrupt);
+  const targetSelect = document.getElementById("tradeTarget");
+  targetSelect.innerHTML = "";
+  opponents.forEach(player => {
+    const option = document.createElement("option");
+    option.value = player.id;
+    option.textContent = player.name;
+    targetSelect.appendChild(option);
+  });
+  document.getElementById("tradeFromCash").max = me.cash;
+  document.getElementById("tradeFromCash").value = 0;
+  document.getElementById("tradeToCash").value = 0;
+  document.getElementById("tradeDialogError").textContent = opponents.length ? "" : "No other active players are available.";
+  document.getElementById("tradeSendBtn").disabled = opponents.length === 0;
+  renderTradeProperties();
+  document.getElementById("tradeDialog").showModal();
+}
+
+function renderTradeProperties() {
+  if (!currentState || !myId) return;
+  const targetId = document.getElementById("tradeTarget").value;
+  const me = currentState.players.find(player => player.id === myId);
+  const target = currentState.players.find(player => player.id === targetId);
+  const renderOptions = (containerId, player, prefix) => {
+    const container = document.getElementById(containerId);
+    container.innerHTML = "";
+    if (!player) return;
+    const tradable = player.properties.filter(id => {
+      const ownership = currentState.ownership[id];
+      return ownership && !ownership.houses && !ownership.hotel;
+    });
+    if (!tradable.length) {
+      const empty = document.createElement("div");
+      empty.className = "trade-empty";
+      empty.textContent = "No tradable properties";
+      container.appendChild(empty);
+      return;
+    }
+    tradable.forEach(id => {
+      const ownership = currentState.ownership[id];
+      const label = document.createElement("label");
+      label.className = "trade-property-option";
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.value = id;
+      checkbox.name = prefix;
+      const name = document.createElement("span");
+      name.textContent = `${BOARD[id].name}${ownership.mortgaged ? " · mortgaged" : ""}`;
+      label.append(checkbox, name);
+      container.appendChild(label);
+    });
+  };
+  renderOptions("tradeFromProps", me, "fromProperty");
+  renderOptions("tradeToProps", target, "toProperty");
+  document.getElementById("tradeToCash").max = target?.cash || 0;
+}
+
+function sendTradeOffer() {
+  const toId = document.getElementById("tradeTarget").value;
+  const offer = {
+    fromCash: Number(document.getElementById("tradeFromCash").value || 0),
+    toCash: Number(document.getElementById("tradeToCash").value || 0),
+    fromProps: [...document.querySelectorAll("#tradeFromProps input:checked")].map(input => Number(input.value)),
+    toProps: [...document.querySelectorAll("#tradeToProps input:checked")].map(input => Number(input.value)),
+  };
+  socket.emit("propose_trade", { toId, offer }, result => {
+    if (result?.error) {
+      document.getElementById("tradeDialogError").textContent = result.error;
+      return;
+    }
+    document.getElementById("tradeDialog").close();
+  });
+}
+
+function renderTradeOffer(state) {
+  const panel = document.getElementById("tradeOfferPanel");
+  const pending = state.pendingTrade;
+  const involved = pending && (pending.fromId === myId || pending.toId === myId);
+  panel.classList.toggle("hidden", !involved);
+  document.getElementById("tradeOpenBtn").disabled = !state.started || !!pending || state.players.filter(player => !player.bankrupt && player.id !== myId).length === 0;
+  if (!involved) return;
+
+  const from = state.players.find(player => player.id === pending.fromId);
+  const to = state.players.find(player => player.id === pending.toId);
+  const names = ids => ids.map(id => BOARD[id]?.name || "Unknown property").join(", ");
+  const describe = (cash, ids) => [cash ? `$${cash}` : "", names(ids)].filter(Boolean).join(" + ") || "nothing";
+  const fromOffer = describe(pending.offer.fromCash, pending.offer.fromProps);
+  const toOffer = describe(pending.offer.toCash, pending.offer.toProps);
+  const isRecipient = pending.toId === myId;
+  document.getElementById("tradeOfferTitle").textContent = isRecipient ? `Offer from ${from?.name || "player"}` : `Offer sent to ${to?.name || "player"}`;
+  document.getElementById("tradeOfferText").textContent = `${fromOffer} for ${toOffer}`;
+  document.getElementById("acceptTradeBtn").classList.toggle("hidden", !isRecipient);
+  document.getElementById("rejectTradeBtn").classList.toggle("hidden", !isRecipient);
+  document.getElementById("cancelTradeBtn").classList.toggle("hidden", isRecipient);
+}
+
 document.getElementById("chatInput").addEventListener("keydown", (e) => {
   if (e.key === "Enter") sendChat();
 });
@@ -271,6 +389,7 @@ socket.on("state", (state) => {
     ["Double rent on full sets", rules.doubleRentOnMonopoly],
     ["Rent-free while in jail", rules.rentFreeInJail],
   ].map(([label, enabled]) => `<div class="rule-summary-row"><span>${label}</span><span class="rule-state ${enabled ? "on" : "off"}">${enabled ? "On" : "Off"}</span></div>`).join("");
+  renderTradeOffer(state);
 });
 
 function renderGame(state) {
@@ -287,7 +406,11 @@ function renderGame(state) {
   }
 
   if (state.lastRoll) {
-    document.getElementById("diceDisplay").textContent = `🎲 ${state.lastRoll[0]}  🎲 ${state.lastRoll[1]}`;
+    document.getElementById("diceDisplay").textContent = `${state.lastRoll[0]} + ${state.lastRoll[1]} = ${state.lastRoll[0] + state.lastRoll[1]}`;
+    if (state.rollSequence && state.rollSequence !== lastAnimatedRollSequence) {
+      lastAnimatedRollSequence = state.rollSequence;
+      diceAnimator?.rollTo(state.lastRoll);
+    }
   }
 
   // Buttons visibility
