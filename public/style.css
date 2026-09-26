@@ -1,0 +1,79 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #0d1117; color: #e6e6e6;
+}
+.hidden { display: none !important; }
+.screen { min-height: 100vh; }
+
+/* Lobby */
+#lobby { display: flex; align-items: center; justify-content: center; }
+.lobby-box {
+  background: #161b22; padding: 32px; border-radius: 12px; width: 340px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.lobby-box h1 { text-align: center; margin-top: 0; }
+.lobby-box input {
+  width: 100%; padding: 10px; margin: 6px 0; border-radius: 6px; border: 1px solid #30363d;
+  background: #0d1117; color: #fff;
+}
+.lobby-box button {
+  width: 100%; padding: 10px; margin-top: 8px; border-radius: 6px; border: none;
+  background: #58a6ff; color: #000; font-weight: bold; cursor: pointer;
+}
+.lobby-box button:hover { background: #79b8ff; }
+.error { color: #f85149; min-height: 18px; }
+.rule-toggle { display: block; margin: 8px 0; font-size: 14px; }
+#playerList { padding-left: 18px; }
+
+/* Game layout */
+.game-layout { display: flex; gap: 16px; padding: 16px; }
+.board-wrap { flex: 2; display: flex; justify-content: center; }
+.board {
+  display: grid;
+  grid-template-columns: repeat(11, minmax(50px, 70px));
+  grid-template-rows: repeat(11, minmax(50px, 70px));
+  gap: 2px; background: #21262d; padding: 4px; border-radius: 8px;
+}
+.space {
+  background: #161b22; border: 1px solid #30363d; border-radius: 3px;
+  font-size: 9px; padding: 3px; position: relative; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+.space .name { font-weight: 600; line-height: 1.1; }
+.space .price { color: #8b949e; }
+.space .color-bar { height: 8px; margin: -3px -3px 2px -3px; }
+.space .owner-tag {
+  position: absolute; bottom: 2px; right: 2px; font-size: 8px; padding: 1px 3px;
+  border-radius: 3px; background: rgba(255,255,255,0.15);
+}
+.space .tokens { position: absolute; top: 2px; left: 2px; display: flex; gap: 1px; flex-wrap: wrap; }
+.token { width: 10px; height: 10px; border-radius: 50%; border: 1px solid #fff; }
+.space.house-owned { box-shadow: inset 0 0 0 2px gold; }
+.center-cell { grid-column: 2 / span 9; grid-row: 2 / span 9; background: #0d1117; border: none;
+  display: flex; align-items: center; justify-content: center; font-size: 28px; color: #30363d; font-weight: bold; }
+
+/* Sidebar */
+.sidebar { flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 10px; }
+.turn-banner { background: #21262d; padding: 10px; border-radius: 8px; font-weight: bold; text-align: center; }
+.dice-area { background: #161b22; padding: 12px; border-radius: 8px; text-align: center; }
+.dice-display { font-size: 28px; margin-bottom: 8px; }
+.dice-area button, .manage-buttons button, #auctionArea button {
+  padding: 8px 12px; margin: 4px 4px 0 0; border-radius: 6px; border: none;
+  background: #238636; color: #fff; cursor: pointer; font-weight: 600;
+}
+.dice-area button:hover, .manage-buttons button:hover { background: #2ea043; }
+#declineBtn, #sellHouseBtn { background: #da3633; }
+#declineBtn:hover, #sellHouseBtn:hover { background: #f85149; }
+#auctionArea { background: #161b22; padding: 12px; border-radius: 8px; }
+#auctionArea input { padding: 6px; border-radius: 6px; border: 1px solid #30363d; background: #0d1117; color: #fff; width: 100px; }
+.players { background: #161b22; padding: 10px; border-radius: 8px; }
+.player-card { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #21262d; font-size: 14px; }
+.player-card.current { color: #58a6ff; font-weight: bold; }
+.player-card .swatch { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+.manage { background: #161b22; padding: 10px; border-radius: 8px; }
+.manage select { width: 100%; padding: 6px; border-radius: 6px; background: #0d1117; color: #fff; border: 1px solid #30363d; margin-bottom: 6px; }
+.log { background: #161b22; padding: 10px; border-radius: 8px; height: 140px; overflow-y: auto; font-size: 12px; color: #8b949e; }
+.chat { background: #161b22; padding: 10px; border-radius: 8px; }
+.chat-messages { height: 90px; overflow-y: auto; font-size: 12px; margin-bottom: 6px; }
+.chat input { width: 100%; padding: 6px; border-radius: 6px; background: #0d1117; color: #fff; border: 1px solid #30363d; }

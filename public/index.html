@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Monopoly Online</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="lobby" class="screen">
+  <div class="lobby-box">
+    <h1>🎩 Monopoly Online</h1>
+    <input id="nameInput" placeholder="Your name" maxlength="16" />
+    <input id="roomInput" placeholder="Room code (e.g. abc123)" maxlength="20" />
+    <button id="joinBtn">Join Room</button>
+    <p id="lobbyError" class="error"></p>
+    <div id="waitingRoom" class="hidden">
+      <h3>Players in room:</h3>
+      <ul id="playerList"></ul>
+      <label class="rule-toggle"><input type="checkbox" id="ruleAuction" checked> Auction on decline</label>
+      <label class="rule-toggle"><input type="checkbox" id="ruleVacation"> Vacation cash (Free Parking pot)</label>
+      <label class="rule-toggle"><input type="checkbox" id="ruleDoubleRent" checked> x2 rent on full monopoly (no houses)</label>
+      <button id="startBtn">Start Game</button>
+    </div>
+  </div>
+</div>
+
+<div id="game" class="screen hidden">
+  <div class="game-layout">
+    <div class="board-wrap">
+      <div id="board" class="board"></div>
+    </div>
+    <div class="sidebar">
+      <div id="turnBanner" class="turn-banner"></div>
+      <div class="dice-area">
+        <div id="diceDisplay" class="dice-display">🎲 🎲</div>
+        <button id="rollBtn">Roll Dice</button>
+        <button id="buyBtn" class="hidden">Buy Property</button>
+        <button id="declineBtn" class="hidden">Decline</button>
+        <button id="endTurnBtn" class="hidden">End Turn</button>
+        <button id="payJailBtn" class="hidden">Pay $50 to leave Jail</button>
+        <button id="jailCardBtn" class="hidden">Use Jail Free Card</button>
+      </div>
+      <div id="auctionArea" class="hidden">
+        <h3>Auction: <span id="auctionSpaceName"></span></h3>
+        <p>Highest bid: $<span id="auctionHighBid">0</span> by <span id="auctionHighBidder">-</span></p>
+        <input id="bidInput" type="number" min="1" placeholder="Your bid" />
+        <button id="bidBtn">Bid</button>
+        <button id="passBtn">Pass</button>
+      </div>
+      <div id="players" class="players"></div>
+      <div class="manage">
+        <h3>Manage Properties</h3>
+        <select id="myPropsSelect"></select>
+        <div class="manage-buttons">
+          <button id="buildBtn">Build House</button>
+          <button id="sellHouseBtn">Sell House</button>
+          <button id="mortgageBtn">Mortgage</button>
+          <button id="unmortgageBtn">Unmortgage</button>
+        </div>
+      </div>
+      <div id="log" class="log"></div>
+      <div class="chat">
+        <div id="chatMessages" class="chat-messages"></div>
+        <input id="chatInput" placeholder="Say something..." />
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="client.js"></script>
+</body>
+</html>

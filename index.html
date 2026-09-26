@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#202724">
+  <title>Common Ground — Property & chance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #202724;
+      --panel: #29322e;
+      --panel-light: #34403a;
+      --paper: #f3efdf;
+      --paper-dim: #d9d3c2;
+      --muted: #9da9a0;
+      --line: #46524b;
+      --mint: #a8d7bb;
+      --coral: #eb9078;
+      --gold: #e6c475;
+      --blue: #80b7cf;
+      --violet: #ae9bc8;
+      --shadow: 0 18px 45px #11171466;
+      font-family: "DM Sans", "Trebuchet MS", sans-serif;
+      font-synthesis: none;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--ink); color: var(--paper); }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .app { min-height: 100vh; display: flex; flex-direction: column; }
+    header { min-height: 76px; padding: 14px clamp(16px, 3vw, 42px); display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid #ffffff12; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-mark { display: grid; place-items: center; width: 42px; aspect-ratio: 1; border-radius: 13px; color: var(--ink); background: var(--mint); font-family: Fraunces, Georgia, serif; font-size: 24px; font-weight: 700; }
+    .brand-name { font: 700 21px Fraunces, Georgia, serif; letter-spacing: 0; }
+    .brand-sub { margin-top: 2px; color: var(--muted); font-size: 11px; letter-spacing: 1.1px; text-transform: uppercase; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .turn-pill, .icon-button, .primary, .secondary, .danger { min-height: 38px; border: 1px solid var(--line); border-radius: 7px; color: var(--paper); background: var(--panel); }
+    .turn-pill { display: flex; align-items: center; gap: 8px; padding: 0 13px; color: var(--paper-dim); font-size: 12px; }
+    .turn-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--mint); }
+    .icon-button { width: 40px; display: grid; place-items: center; color: var(--paper-dim); }
+    .icon-button:hover, .secondary:hover { background: var(--panel-light); }
+    main { width: min(1500px, 100%); margin: auto; padding: 22px clamp(12px, 2vw, 28px) 28px; display: grid; grid-template-columns: minmax(570px, 1fr) minmax(300px, 370px); gap: 22px; align-items: start; }
+    .board-wrap { min-width: 0; }
+    .board-meta { display: flex; justify-content: space-between; align-items: end; margin: 0 2px 12px; }
+    .eyebrow { color: var(--mint); font-size: 10px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; }
+    h1 { margin: 4px 0 0; font: 600 26px Fraunces, Georgia, serif; letter-spacing: 0; }
+    .round-count { color: var(--muted); font-size: 12px; }
+    .board { display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); grid-template-rows: repeat(11, minmax(0, 1fr)); gap: 3px; padding: 5px; border: 1px solid #d6cfb8; border-radius: 8px; background: #d6cfb8; box-shadow: var(--shadow); aspect-ratio: 1; }
+    .tile { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: space-between; min-width: 0; padding: 5px 3px 4px; color: #353a32; background: var(--paper); text-align: center; }
+    .tile.property { padding-top: 0; }
+    .tile-band { width: 100%; height: 12px; flex: 0 0 12px; margin-bottom: 4px; background: var(--group-color, #888); border-bottom: 1px solid #0002; }
+    .tile-name { max-width: 100%; font-size: clamp(7px, .78vw, 10px); font-weight: 700; line-height: 1.12; overflow-wrap: anywhere; }
+    .tile-price { margin-top: auto; color: #76766d; font-size: clamp(7px, .68vw, 9px); }
+    .tile-icon { font-size: clamp(12px, 1.45vw, 19px); line-height: 1; }
+    .tile-kind { color: #77766d; font-size: 7px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; }
+    .tile-corner { padding: 8px 4px; }
+    .tile-corner .tile-name { font-size: clamp(8px, .85vw, 11px); }
+    .tile.owner-a::after, .tile.owner-b::after, .tile.owner-c::after, .tile.owner-d::after, .tile.owner-e::after, .tile.owner-f::after, .tile.owner-g::after, .tile.owner-h::after { position: absolute; right: 3px; bottom: 3px; width: 7px; height: 7px; border: 1px solid #fff; border-radius: 50%; background: var(--owner-color); content: ""; box-shadow: 0 0 0 1px #292b26; }
+    .tile.mortgaged { opacity: .62; }
+    .tile.mortgaged::before { position: absolute; z-index: 2; inset: 0; display: grid; place-items: center; color: #5d3434; background: #e8d9cfcc; font-size: 9px; font-weight: 700; letter-spacing: 1px; content: "MORTGAGED"; transform: rotate(-18deg); }
+    .tile.buildings { box-shadow: inset 0 -5px var(--building-color, #37966a); }
+    .token-row { position: absolute; right: 2px; bottom: 12px; left: 2px; display: flex; justify-content: center; gap: 2px; }
+    .token { width: 11px; height: 11px; display: grid; place-items: center; border: 1px solid #fff; border-radius: 50%; color: #18211d; background: var(--token-color); font-size: 6px; font-weight: 700; box-shadow: 0 1px 2px #1118; }
+    .tile.has-token .tile-price { visibility: hidden; }
+    .board-center { grid-column: 2 / 11; grid-row: 2 / 11; position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden; color: #eff0e2; background: #617c69; }
+    .board-center::before, .board-center::after { position: absolute; width: 130%; height: 1px; background: #ffffff1c; content: ""; transform: rotate(-35deg); }
+    .board-center::after { transform: rotate(35deg); }
+    .center-stamp { position: relative; z-index: 1; display: grid; place-items: center; width: 72%; max-width: 310px; aspect-ratio: 1.7; border: 1px solid #dce2ca88; color: #f1e2b9; transform: rotate(-8deg); }
+    .center-stamp strong { font: 700 clamp(27px, 5vw, 56px) Fraunces, Georgia, serif; letter-spacing: 0; }
+    .center-stamp span { margin-top: -10px; font-size: 9px; font-weight: 700; letter-spacing: 3px; }
+    .center-note { z-index: 1; margin-top: 16px; color: #e4ecdd; font-size: 11px; text-align: center; }
+    .center-dice { z-index: 1; display: flex; gap: 8px; margin-top: 12px; }
+    .die { width: 34px; aspect-ratio: 1; display: grid; place-items: center; border-radius: 7px; color: #26322a; background: var(--paper); font-size: 17px; font-weight: 700; box-shadow: 0 2px 5px #1e2a2277; }
+    .side-panel { display: flex; flex-direction: column; gap: 13px; }
+    .panel { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+    .active-card { padding: 16px; }
+    .player-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .player-name { display: flex; align-items: center; gap: 10px; font: 600 19px Fraunces, Georgia, serif; }
+    .player-token { width: 13px; height: 13px; border: 2px solid #ffffff9c; border-radius: 50%; background: var(--token-color); }
+    .cash { color: var(--mint); font-size: 17px; font-weight: 700; }
+    .player-subline { display: flex; justify-content: space-between; margin-top: 8px; color: var(--muted); font-size: 11px; }
+    .progress-line { height: 3px; margin-top: 13px; overflow: hidden; border-radius: 3px; background: #ffffff12; }
+    .progress-line span { display: block; height: 100%; border-radius: inherit; background: var(--token-color); transition: width .35s ease; }
+    .action-panel { padding: 14px; }
+    .section-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 11px; color: var(--paper-dim); font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+    .phase-label { color: var(--mint); font-size: 10px; font-weight: 600; letter-spacing: 0; }
+    .landing-title { margin: 0 0 5px; font: 600 20px Fraunces, Georgia, serif; }
+    .action-copy { min-height: 33px; margin: 0 0 12px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .button-row { display: flex; flex-wrap: wrap; gap: 7px; }
+    .primary, .secondary, .danger { min-height: 36px; padding: 0 12px; font-size: 12px; font-weight: 700; }
+    .primary { border-color: var(--mint); color: #1b2921; background: var(--mint); }
+    .primary:hover { background: #bde5cc; }
+    .secondary { color: var(--paper-dim); }
+    .danger { border-color: #794d43; color: #f3b09a; background: #49332f; }
+    button:disabled { cursor: not-allowed; opacity: .45; }
+    .property-list { display: flex; flex-direction: column; }
+    .property-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; border-top: 1px solid #ffffff0e; }
+    .property-name { min-width: 0; font-size: 12px; font-weight: 600; }
+    .property-meta { margin-top: 2px; color: var(--muted); font-size: 10px; }
+    .property-actions { display: flex; gap: 5px; flex: 0 0 auto; }
+    .mini-button { min-height: 27px; padding: 0 7px; border: 1px solid var(--line); border-radius: 5px; color: var(--paper-dim); background: #ffffff06; font-size: 10px; }
+    .mini-button:hover { background: var(--panel-light); }
+    .player-list { display: flex; flex-direction: column; gap: 0; padding: 4px 14px; }
+    .score-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center; min-height: 43px; border-top: 1px solid #ffffff0e; font-size: 11px; }
+    .score-row:first-child { border-top: 0; }
+    .score-name { display: flex; align-items: center; gap: 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .score-cash { font-weight: 700; }
+    .score-assets { color: var(--muted); text-align: right; }
+    .log-panel { overflow: hidden; }
+    .log-title { padding: 12px 14px 8px; color: var(--paper-dim); font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+    .log-list { display: flex; flex-direction: column; gap: 0; max-height: 180px; overflow: auto; padding: 0 14px 10px; }
+    .log-entry { padding: 8px 0; border-top: 1px solid #ffffff0e; color: var(--muted); font-size: 11px; line-height: 1.4; }
+    .log-entry:first-child { border: 0; }
+    .log-entry strong { color: var(--paper-dim); font-weight: 600; }
+    .bottom-actions { display: flex; gap: 7px; padding: 0 2px; }
+    .bottom-actions > button { flex: 1; }
+    .modal-backdrop { position: fixed; z-index: 10; inset: 0; display: grid; place-items: center; padding: 16px; background: #111713bb; backdrop-filter: blur(4px); }
+    .modal { width: min(480px, 100%); max-height: min(85vh, 720px); overflow: auto; padding: 21px; border: 1px solid #5c695f; border-radius: 9px; background: var(--panel); box-shadow: 0 24px 80px #1119; animation: arrive .18s ease-out; }
+    @keyframes arrive { from { opacity: 0; transform: translateY(8px) scale(.99); } to { opacity: 1; transform: none; } }
+    .modal h2 { margin: 0 0 5px; font: 600 23px Fraunces, Georgia, serif; }
+    .modal-copy { margin: 0 0 16px; color: var(--muted); font-size: 12px; line-height: 1.55; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin: 15px 0; }
+    .form-field { display: flex; flex-direction: column; gap: 5px; color: var(--paper-dim); font-size: 11px; }
+    .form-field input, .form-field select { width: 100%; height: 36px; padding: 0 9px; border: 1px solid var(--line); border-radius: 5px; color: var(--paper); background: var(--ink); }
+    .check-field { display: flex; align-items: center; gap: 9px; color: var(--paper-dim); font-size: 12px; }
+    .check-field input { accent-color: var(--mint); }
+    .settings-list { display: grid; gap: 13px; padding: 3px 0 18px; }
+    .auction-top { display: flex; justify-content: space-between; padding: 10px; border: 1px solid var(--line); border-radius: 6px; background: #ffffff05; font-size: 12px; }
+    .auction-turn { margin-top: 13px; color: var(--mint); font-size: 12px; font-weight: 700; }
+    .auction-controls { display: flex; gap: 8px; margin-top: 10px; }
+    .auction-controls input { width: 90px; height: 36px; padding: 0 8px; border: 1px solid var(--line); border-radius: 5px; color: var(--paper); background: var(--ink); }
+    .trade-offer { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .trade-side { display: flex; flex-direction: column; gap: 7px; }
+    .trade-side h3 { margin: 2px 0 4px; color: var(--mint); font-size: 11px; text-transform: uppercase; }
+    .trade-check { display: flex; align-items: center; gap: 6px; color: var(--paper-dim); font-size: 11px; }
+    .trade-check input { accent-color: var(--mint); }
+    .trade-cash { width: 100%; height: 33px; padding: 0 8px; border: 1px solid var(--line); border-radius: 5px; color: var(--paper); background: var(--ink); }
+    .toast { position: fixed; z-index: 20; right: 18px; bottom: 18px; max-width: min(360px, calc(100vw - 36px)); padding: 11px 14px; border: 1px solid #56665a; border-radius: 7px; color: var(--paper); background: #34443a; box-shadow: var(--shadow); font-size: 12px; animation: arrive .16s ease-out; }
+    .hidden { display: none !important; }
+    @media (min-width: 1200px) { .board { --edge: 86px; } }
+    @media (max-width: 900px) { main { grid-template-columns: minmax(0, 1fr); max-width: 720px; } .board { --edge: clamp(48px, 10vw, 67px); } .tile-name { font-size: clamp(7px, 1.2vw, 10px); } }
+    @media (max-width: 480px) { header { min-height: 65px; } .brand-name { font-size: 18px; } .brand-mark { width: 36px; } .turn-pill { padding: 0 8px; font-size: 10px; } main { padding: 15px 8px 20px; gap: 14px; } .board { --edge: 8.7vw; gap: 2px; padding: 3px; } .tile { padding-right: 1px; padding-left: 1px; } .tile-band { height: 8px; flex-basis: 8px; margin-bottom: 2px; } .tile-name { font-size: 6.5px; } .tile-kind { font-size: 5.5px; } .tile-price { font-size: 6px; } .token { width: 9px; height: 9px; font-size: 5px; } .token-row { bottom: 10px; } .tile-corner { padding: 5px 2px; } h1 { font-size: 23px; } .form-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand"><div class="brand-mark">C</div><div><div class="brand-name">Common Ground</div><div class="brand-sub">Property & chance</div></div></div>
+      <div class="header-right"><div class="turn-pill"><span class="turn-dot" id="header-dot"></span><span id="header-turn">New game</span></div><button class="icon-button" id="settings-button" title="Game settings" aria-label="Game settings">⚙</button></div>
+    </header>
+    <main>
+      <section class="board-wrap">
+        <div class="board-meta"><div><div class="eyebrow">Atlantic City · 40 spaces</div><h1>The board</h1></div><div class="round-count" id="round-label">Ready when you are</div></div>
+        <div class="board" id="board" aria-label="Monopoly game board"></div>
+      </section>
+      <aside class="side-panel">
+        <section class="panel active-card" id="active-card"></section>
+        <section class="panel action-panel" id="action-panel"></section>
+        <section class="panel player-list" id="player-list"></section>
+        <section class="panel log-panel"><div class="log-title">Table talk</div><div class="log-list" id="log-list"></div></section>
+        <div class="bottom-actions"><button class="secondary" id="trade-button">⇄ &nbsp;Propose trade</button><button class="secondary" id="new-game-button">＋ &nbsp;New game</button></div>
+      </aside>
+    </main>
+  </div>
+  <div id="modal-root"></div>
+  <script>
+    "use strict";
+    const colors = ["#eb9078", "#80b7cf", "#e6c475", "#ae9bc8", "#b5d978", "#e582a5", "#84bd8e", "#dfb58b"];
+    const groups = {
+      brown: { color: "#95674d", build: 50 }, lightBlue: { color: "#9bcbd6", build: 50 }, pink: { color: "#c87c9e", build: 100 }, orange: { color: "#df9252", build: 100 }, red: { color: "#c95d55", build: 150 }, yellow: { color: "#d4bd54", build: 150 }, green: { color: "#579474", build: 200 }, darkBlue: { color: "#5874aa", build: 200 }
+    };
+    const spaces = [
+      { name: "GO", type: "go", icon: "↻" },
+      { name: "Mediterranean Ave", type: "property", group: "brown", price: 60, rents: [2, 10, 30, 90, 160, 250] },
+      { name: "Community Chest", type: "chest", icon: "▣" },
+      { name: "Baltic Ave", type: "property", group: "brown", price: 60, rents: [4, 20, 60, 180, 320, 450] },
+      { name: "Income Tax", type: "tax", amount: 200, icon: "−$" },
+      { name: "Reading Railroad", type: "railroad", price: 200, icon: "▰" },
+      { name: "Oriental Ave", type: "property", group: "lightBlue", price: 100, rents: [6, 30, 90, 270, 400, 550] },
+      { name: "Chance", type: "chance", icon: "✳" },
+      { name: "Vermont Ave", type: "property", group: "lightBlue", price: 100, rents: [6, 30, 90, 270, 400, 550] },
+      { name: "Connecticut Ave", type: "property", group: "lightBlue", price: 120, rents: [8, 40, 100, 300, 450, 600] },
+      { name: "Jail / Visiting", type: "jail", icon: "▤" },
+      { name: "St. Charles Place", type: "property", group: "pink", price: 140, rents: [10, 50, 150, 450, 625, 750] },
+      { name: "Electric Company", type: "utility", price: 150, icon: "ϟ" },
+      { name: "States Ave", type: "property", group: "pink", price: 140, rents: [10, 50, 150, 450, 625, 750] },
+      { name: "Virginia Ave", type: "property", group: "pink", price: 160, rents: [12, 60, 180, 500, 700, 900] },
+      { name: "Pennsylvania Railroad", type: "railroad", price: 200, icon: "▰" },
+      { name: "St. James Place", type: "property", group: "orange", price: 180, rents: [14, 70, 200, 550, 750, 950] },
+      { name: "Community Chest", type: "chest", icon: "▣" },
+      { name: "Tennessee Ave", type: "property", group: "orange", price: 180, rents: [14, 70, 200, 550, 750, 950] },
+      { name: "New York Ave", type: "property", group: "orange", price: 200, rents: [16, 80, 220, 600, 800, 1000] },
+      { name: "Free Parking", type: "parking", icon: "P" },
+      { name: "Kentucky Ave", type: "property", group: "red", price: 220, rents: [18, 90, 250, 700, 875, 1050] },
+      { name: "Chance", type: "chance", icon: "✳" },
+      { name: "Indiana Ave", type: "property", group: "red", price: 220, rents: [18, 90, 250, 700, 875, 1050] },
+      { name: "Illinois Ave", type: "property", group: "red", price: 240, rents: [20, 100, 300, 750, 925, 1100] },
+      { name: "B&O Railroad", type: "railroad", price: 200, icon: "▰" },
+      { name: "Atlantic Ave", type: "property", group: "yellow", price: 260, rents: [22, 110, 330, 800, 975, 1150] },
+      { name: "Ventnor Ave", type: "property", group: "yellow", price: 260, rents: [22, 110, 330, 800, 975, 1150] },
+      { name: "Water Works", type: "utility", price: 150, icon: "≈" },
+      { name: "Marvin Gardens", type: "property", group: "yellow", price: 280, rents: [24, 120, 360, 850, 1025, 1200] },
+      { name: "Go To Jail", type: "goToJail", icon: "↘" },
+      { name: "Pacific Ave", type: "property", group: "green", price: 300, rents: [26, 130, 390, 900, 1100, 1275] },
+      { name: "North Carolina Ave", type: "property", group: "green", price: 300, rents: [26, 130, 390, 900, 1100, 1275] },
+      { name: "Community Chest", type: "chest", icon: "▣" },
+      { name: "Pennsylvania Ave", type: "property", group: "green", price: 320, rents: [28, 150, 450, 1000, 1200, 1400] },
+      { name: "Short Line Railroad", type: "railroad", price: 200, icon: "▰" },
+      { name: "Chance", type: "chance", icon: "✳" },
+      { name: "Park Place", type: "property", group: "darkBlue", price: 350, rents: [35, 175, 500, 1100, 1300, 1500] },
+      { name: "Luxury Tax", type: "tax", amount: 100, icon: "−$" },
+      { name: "Boardwalk", type: "property", group: "darkBlue", price: 400, rents: [50, 200, 600, 1400, 1700, 2000] }
+    ];
+    const deckDefinitions = {
+      chance: [
+        { text: "Advance to GO. Collect $200.", kind: "move", to: 0, collect: true }, { text: "Advance to Illinois Avenue.", kind: "move", to: 24, collect: true }, { text: "Advance to St. Charles Place.", kind: "move", to: 11, collect: true },
+        { text: "Advance to the nearest Railroad. Pay twice the usual rent if owned.", kind: "nearest", target: "railroad", twice: true }, { text: "Advance to the nearest Railroad. Pay twice the usual rent if owned.", kind: "nearest", target: "railroad", twice: true }, { text: "Advance to the nearest Utility. Rent is 10 times your dice roll.", kind: "nearest", target: "utility", multiplier: 10 },
+        { text: "Bank pays you a dividend of $50.", kind: "money", amount: 50 }, { text: "Get Out of Jail Free. Keep this card until needed.", kind: "jailCard" }, { text: "Go back 3 spaces.", kind: "back", count: 3 },
+        { text: "Go directly to Jail. Do not pass GO.", kind: "jail" }, { text: "Make general repairs: $25 per house, $100 per hotel.", kind: "repair", house: 25, hotel: 100 }, { text: "Pay poor tax of $15.", kind: "money", amount: -15 },
+        { text: "Take a trip to Reading Railroad.", kind: "move", to: 5, collect: true }, { text: "You have been elected Chairman. Pay each player $50.", kind: "each", amount: -50 }, { text: "Your building loan matures. Collect $150.", kind: "money", amount: 150 },
+        { text: "You have won a crossword competition. Collect $100.", kind: "money", amount: 100 }
+      ],
+      chest: [
+        { text: "Bank error in your favor. Collect $200.", kind: "money", amount: 200 }, { text: "Doctor's fee. Pay $50.", kind: "money", amount: -50 }, { text: "From sale of stock you get $50.", kind: "money", amount: 50 },
+        { text: "Get Out of Jail Free. Keep this card until needed.", kind: "jailCard" }, { text: "Go directly to Jail. Do not pass GO.", kind: "jail" }, { text: "Holiday fund matures. Receive $100.", kind: "money", amount: 100 },
+        { text: "Income tax refund. Collect $20.", kind: "money", amount: 20 }, { text: "It is your birthday. Collect $10 from each player.", kind: "each", amount: 10 }, { text: "Life insurance matures. Collect $100.", kind: "money", amount: 100 },
+        { text: "Pay hospital fees of $100.", kind: "money", amount: -100 }, { text: "Pay school fees of $50.", kind: "money", amount: -50 }, { text: "Receive $25 consultancy fee.", kind: "money", amount: 25 },
+        { text: "You are assessed for street repairs: $40 per house, $115 per hotel.", kind: "repair", house: 40, hotel: 115 }, { text: "You inherit $100.", kind: "money", amount: 100 },
+        { text: "Pay each player $50 for a neighborhood celebration.", kind: "each", amount: -50 }, { text: "Advance to GO. Collect $200.", kind: "move", to: 0, collect: true }
+      ]
+    };
+    const state = { players: [], turn: 0, phase: "setup", lastDice: [1, 1], doubles: 0, round: 1, houses: 32, hotels: 12, rules: { auctions: true, monopolyDouble: true, vacationCash: false, noJailRent: false, taxChoice: false }, owners: {}, housesOn: {}, mortgaged: {}, decks: {}, discard: {}, pending: null, auction: null, log: [], gameOver: false, rolled: false };
+    const $ = (query) => document.querySelector(query);
+    const money = (amount) => `$${Math.round(amount).toLocaleString("en-US")}`;
+    let nextRules = { auctions: true, monopolyDouble: true, vacationCash: false, noJailRent: false, taxChoice: false };
+    const active = () => state.players[state.turn];
+    const living = () => state.players.filter((player) => !player.bankrupt);
+    const owns = (playerIndex, index) => state.owners[index] === playerIndex;
+    const groupProperties = (group) => spaces.map((space, index) => space.group === group ? index : -1).filter((index) => index >= 0);
+    const typeName = (space) => ({ property: "Property", railroad: "Railroad", utility: "Utility", tax: "Tax", chance: "Chance", chest: "Community Chest", go: "Start", jail: "Jail", parking: "Free parking", goToJail: "Go to jail" })[space.type] || "Space";
+    function log(message) { state.log.unshift(message); state.log = state.log.slice(0, 18); }
+    function toast(message) { const element = document.createElement("div"); element.className = "toast"; element.textContent = message; document.body.append(element); setTimeout(() => element.remove(), 2600); }
+    function openModal(content) { $("#modal-root").innerHTML = `<div class="modal-backdrop"><section class="modal" role="dialog" aria-modal="true">${content}</section></div>`; $(".modal-backdrop").addEventListener("click", (event) => { if (event.target.classList.contains("modal-backdrop")) closeModal(); }); }
+    function closeModal() { $("#modal-root").innerHTML = ""; }
+    function shuffle(list) { const copy = [...list]; for (let i = copy.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [copy[i], copy[j]] = [copy[j], copy[i]]; } return copy; }
+    function startGame(count, botCount, rules) {
+      state.players = Array.from({ length: count }, (_, index) => ({ name: index < count - botCount ? `Player ${index + 1}` : `Bot ${index - (count - botCount) + 1}`, cash: 1500, position: 0, jailed: false, jailTurns: 0, jailCards: 0, heldJailCards: [], bankrupt: false, bot: index >= count - botCount }));
+      Object.assign(state, { turn: 0, phase: "pre-roll", lastDice: [1, 1], doubles: 0, round: 1, houses: 32, hotels: 12, parkingPot: 0, rules, owners: {}, housesOn: {}, mortgaged: {}, decks: { chance: shuffle(deckDefinitions.chance), chest: shuffle(deckDefinitions.chest) }, discard: { chance: [], chest: [] }, pending: null, auction: null, log: [], gameOver: false, rolled: false });
+      closeModal(); log("The game begins. Each player starts with $1,500."); render(); maybeBot();
+    }
+    function showSetup() {
+      openModal(`<h2>A fresh table</h2><p class="modal-copy">Gather around for a local game. House rules can be changed before you begin.</p><div class="form-grid"><label class="form-field">Players<select id="setup-count">${Array.from({ length: 7 }, (_, index) => index + 2).map((count) => `<option value="${count}" ${count === 4 ? "selected" : ""}>${count} players</option>`).join("")}</select></label><label class="form-field">Computer players<select id="setup-bots">${Array.from({ length: 8 }, (_, bots) => `<option value="${bots}">${bots === 0 ? "None" : `${bots} ${bots === 1 ? "bot" : "bots"}`}</option>`).join("")}</select></label></div><div class="button-row"><button class="primary" id="setup-start">Start game</button></div>`);
+      $("#setup-start").onclick = () => { const count = Number($("#setup-count").value); const bots = Math.min(Number($("#setup-bots").value), count - 1); startGame(count, bots, nextRules); };
+    }
+    function defaultRules() { return { auctions: true, monopolyDouble: true, vacationCash: false, noJailRent: false, taxChoice: false }; }
+    function showSettings() {
+      const rules = state.players.length && !state.gameOver ? nextRules : state.rules || nextRules;
+      openModal(`<h2>Table rules</h2><p class="modal-copy">Choose the house rules for your next game.</p><div class="settings-list"><label class="check-field"><input type="checkbox" id="rule-auction" ${rules.auctions ? "checked" : ""}> Auction properties when a player declines</label><label class="check-field"><input type="checkbox" id="rule-monopoly" ${rules.monopolyDouble ? "checked" : ""}> Double base rent on a complete color set</label><label class="check-field"><input type="checkbox" id="rule-parking" ${rules.vacationCash ? "checked" : ""}> Add taxes and fees to a Free Parking pot</label><label class="check-field"><input type="checkbox" id="rule-jail" ${rules.noJailRent ? "checked" : ""}> Players in jail do not collect rent</label><label class="check-field"><input type="checkbox" id="rule-tax" ${rules.taxChoice ? "checked" : ""}> Income tax: choose $200 or 10% of net worth</label></div><div class="button-row"><button class="primary" id="settings-save">Save rules</button><button class="secondary" id="settings-cancel">Cancel</button></div>`);
+      $("#settings-save").onclick = () => { nextRules = { auctions: $("#rule-auction").checked, monopolyDouble: $("#rule-monopoly").checked, vacationCash: $("#rule-parking").checked, noJailRent: $("#rule-jail").checked, taxChoice: $("#rule-tax").checked }; if (state.players.length && !state.gameOver) toast("Rules saved for your next game."); else state.rules = nextRules; closeModal(); if (!state.players.length || state.gameOver) showSetupWithRules(nextRules); };
+      $("#settings-cancel").onclick = closeModal;
+    }
+    function showSetupWithRules(rules) {
+      showSetup();
+      nextRules = rules;
+      $("#setup-start").onclick = () => { const count = Number($("#setup-count").value); const bots = Math.min(Number($("#setup-bots").value), count - 1); startGame(count, bots, rules); };
+    }
+    function boardPosition(index) {
+      if (index <= 10) return { row: 11, col: 11 - index };
+      if (index <= 20) return { row: 11 - (index - 10), col: 1 };
+      if (index <= 30) return { row: 1, col: index - 20 + 1 };
+      return { row: index - 30 + 1, col: 11 };
+    }
+    function buildBoard() {
+      const board = $("#board"); board.innerHTML = "";
+      spaces.forEach((space, index) => {
+        const position = boardPosition(index); const tile = document.createElement("div"); tile.className = `tile ${space.type === "property" ? "property" : ""} ${[0, 10, 20, 30].includes(index) ? "tile-corner" : ""}`; tile.style.gridRow = position.row; tile.style.gridColumn = position.col; tile.dataset.index = index;
+        if (space.group) tile.style.setProperty("--group-color", groups[space.group].color);
+        const icon = space.icon ? `<div class="tile-icon">${space.icon}</div>` : "";
+        const band = space.group ? `<div class="tile-band"></div>` : "";
+        const price = space.price ? `<div class="tile-price">${money(space.price)}</div>` : space.amount ? `<div class="tile-price">${money(space.amount)}</div>` : "";
+        tile.innerHTML = `${band}${icon}<div class="tile-name">${space.name}</div>${!space.icon && !space.group ? `<div class="tile-kind">${typeName(space)}</div>` : ""}${price}<div class="token-row"></div>`;
+        board.append(tile);
+      });
+      const center = document.createElement("div"); center.className = "board-center"; center.innerHTML = `<div class="center-stamp"><div><strong>MONOPOLY</strong><span>PROPERTY · CHANCE · FORTUNE</span></div></div><div class="center-note" id="center-note">A little luck. A lot of nerve.</div><div class="center-dice" id="center-dice"></div>`; board.append(center);
+    }
+    function hasMonopoly(playerIndex, group) { const members = groupProperties(group); return members.every((index) => owns(playerIndex, index)); }
+    function buildCount(index) { return state.housesOn[index] || 0; }
+    function rentFor(index, diceTotal, multiplier = 1) {
+      const space = spaces[index]; const ownerIndex = state.owners[index];
+      if (ownerIndex === undefined || ownerIndex === state.turn || state.mortgaged[index]) return 0;
+      if (state.rules.noJailRent && state.players[ownerIndex].jailed) return 0;
+      if (space.type === "railroad") { const count = Object.keys(state.owners).filter((key) => Number(state.owners[key]) === ownerIndex && spaces[key].type === "railroad").length; return [0, 25, 50, 100, 200][count] * multiplier; }
+      if (space.type === "utility") { const count = Object.keys(state.owners).filter((key) => Number(state.owners[key]) === ownerIndex && spaces[key].type === "utility").length; return diceTotal * (count > 1 ? 10 : 4) * multiplier; }
+      if (space.type === "property") { const houses = buildCount(index); const rent = space.rents[houses]; return (houses === 0 && state.rules.monopolyDouble && hasMonopoly(ownerIndex, space.group) ? rent * 2 : rent) * multiplier; }
+      return 0;
+    }
+    function netWorth(playerIndex) {
+      const player = state.players[playerIndex]; let total = player.cash;
+      Object.keys(state.owners).forEach((key) => { if (Number(state.owners[key]) === playerIndex) { const index = Number(key); total += spaces[index].price || 0; total += buildCount(index) * groups[spaces[index].group]?.build / 2 || 0; } });
+      return total;
+    }
+    function render() {
+      buildBoard();
+      const gameRunning = state.players.length && !state.gameOver; const player = gameRunning ? active() : null;
+      $("#header-turn").textContent = player ? `${player.name}'s turn` : state.gameOver ? "Game over" : "New game";
+      $("#header-dot").style.background = player ? colors[state.turn % colors.length] : "var(--muted)";
+      $("#round-label").textContent = gameRunning ? `Round ${state.round} · ${living().length} in the running` : "Ready when you are";
+      if (player) {
+        const properties = Object.keys(state.owners).filter((key) => Number(state.owners[key]) === state.turn).length;
+        $("#active-card").innerHTML = `<div class="player-heading"><div class="player-name"><span class="player-token" style="--token-color:${colors[state.turn % colors.length]}"></span>${player.name}${player.bot ? " <small style='font:500 10px DM Sans;color:var(--muted)'>(BOT)</small>" : ""}</div><div class="cash">${money(player.cash)}</div></div><div class="player-subline"><span>${player.jailed ? `In jail · ${player.jailTurns}/3 turns` : `Space ${player.position} · ${spaces[player.position].name}`}</span><span>${properties} ${properties === 1 ? "property" : "properties"}</span></div><div class="progress-line"><span style="width:${Math.min(100, player.cash / 20)}%;--token-color:${colors[state.turn % colors.length]}"></span></div>`;
+      } else $("#active-card").innerHTML = `<div class="player-heading"><div class="player-name">${state.gameOver ? "The game is won" : "Ready to play?"}</div></div><div class="player-subline"><span>${state.gameOver ? `${living()[0]?.name || "Nobody"} owns the board.` : "Set up the table and roll the dice."}</span></div>`;
+      renderAction(player); renderPlayers(); renderLog(); renderTokens(); renderCenter();
+      $("#trade-button").disabled = !player || player.bot || state.phase === "auction" || state.phase === "pending" || state.gameOver;
+    }
+    function renderAction(player) {
+      const panel = $("#action-panel");
+      if (!player) { panel.innerHTML = `<div class="section-heading">Table actions</div><p class="action-copy">Start a new game to take your seat.</p><button class="primary" id="panel-new-game">Start a game</button>`; $("#panel-new-game").onclick = showSetup; return; }
+      if (state.phase === "auction") { renderAuction(); return; }
+      const phase = state.phase; let html = `<div class="section-heading">Your move <span class="phase-label">${phase.replaceAll("-", " ")}</span></div>`;
+      if (phase === "pre-roll") {
+        if (player.jailed) html += `<div class="landing-title">A turn behind bars</div><p class="action-copy">Roll doubles to get out, use a card, or pay the $50 fine.</p><div class="button-row"><button class="primary" id="jail-roll">Roll for doubles</button>${player.jailCards ? `<button class="secondary" id="jail-card">Use a card</button>` : ""}<button class="secondary" id="jail-pay">Pay $50</button></div>`;
+        else html += `<div class="landing-title">Ready to roll?</div><p class="action-copy">Two dice decide where the day takes you.</p><button class="primary" id="roll-button">Roll the dice&nbsp; →</button>`;
+      } else if (phase === "decision") {
+        const space = spaces[player.position]; html += `<div class="landing-title">${space.name}</div><p class="action-copy">Unowned property · ${money(space.price)}. Buy it or let the table bid.</p><div class="button-row"><button class="primary" id="buy-button" ${player.cash < space.price ? "disabled" : ""}>Buy for ${money(space.price)}</button><button class="secondary" id="decline-button">${state.rules.auctions ? "Send to auction" : "Pass"}</button></div>`;
+      } else if (phase === "post-roll") {
+        html += `<div class="landing-title">${spaces[player.position].name}</div><p class="action-copy">${state.doubles ? "Doubles! Take another turn after your actions." : "Your move is complete. Manage property or end your turn."}</p><div class="button-row"><button class="primary" id="end-turn-button">${state.doubles ? "Roll again" : "End turn"}&nbsp; →</button></div>`;
+      } else if (phase === "game-over") html += `<div class="landing-title">${living()[0]?.name} wins</div><p class="action-copy">Everyone else has gone bankrupt.</p><button class="primary" id="panel-new-game">Play again</button>`;
+      html += managementMarkup(player);
+      panel.innerHTML = html;
+      bindActions(player);
+    }
+    function managementMarkup(player) {
+      if (state.phase === "auction" || state.phase === "decision" || state.phase === "game-over") return "";
+      const owned = Object.keys(state.owners).filter((key) => Number(state.owners[key]) === state.turn);
+      let rows = "";
+      owned.forEach((key) => {
+        const index = Number(key); const space = spaces[index]; const houses = buildCount(index); const mortgaged = !!state.mortgaged[index];
+        let action = "";
+        if (space.type === "property" && !mortgaged) {
+          const members = groupProperties(space.group); const even = members.every((member) => buildCount(member) >= houses);
+          if (hasMonopoly(state.turn, space.group) && !members.some((member) => state.mortgaged[member]) && houses < 5 && even) action = `<button class="mini-button" data-build="${index}" ${player.cash < groups[space.group].build || (houses === 4 && state.hotels < 1) || (houses < 4 && state.houses < 1) ? "disabled" : ""}>+ Build</button>`;
+        }
+        if (space.type === "property" && houses === 0 && !mortgaged) {
+          const groupClear = groupProperties(space.group).every((member) => buildCount(member) === 0);
+          if (groupClear) action += `<button class="mini-button" data-mortgage="${index}">Mortgage</button>`;
+        } else if (mortgaged) action += `<button class="mini-button" data-unmortgage="${index}" ${player.cash < Math.ceil(space.price / 2 * 1.1) ? "disabled" : ""}>Unmortgage</button>`;
+        if (space.type === "property" && houses > 0 && !mortgaged) action += `<button class="mini-button" data-sell="${index}">Sell</button>`;
+        if (!action && !mortgaged && space.type !== "property") action = `<button class="mini-button" data-mortgage="${index}">Mortgage</button>`;
+        rows += `<div class="property-row"><div><div class="property-name">${space.name}</div><div class="property-meta">${mortgaged ? "Mortgaged" : houses ? houses === 5 ? "Hotel" : `${houses} house${houses === 1 ? "" : "s"}` : `${typeName(space)} · ${money(space.price)}`}</div></div><div class="property-actions">${action}</div></div>`;
+      });
+      const ownSection = rows ? `<div class="section-heading" style="margin:13px 0 3px">Your deeds <span class="phase-label">${state.houses} houses · ${state.hotels} hotels</span></div><div class="property-list">${rows}</div>` : "";
+      return ownSection;
+    }
+    function bindActions(player) {
+      const listen = (selector, fn) => { const element = $(selector); if (element) element.onclick = fn; };
+      listen("#roll-button", roll); listen("#jail-roll", jailRoll); listen("#jail-pay", () => releaseFromJail(true)); listen("#jail-card", () => releaseFromJail(false));
+      listen("#buy-button", () => buyProperty(player.position)); listen("#decline-button", declineProperty); listen("#end-turn-button", endTurn); listen("#panel-new-game", showSetup);
+      document.querySelectorAll("[data-build]").forEach((button) => button.onclick = () => build(Number(button.dataset.build)));
+      document.querySelectorAll("[data-mortgage]").forEach((button) => button.onclick = () => mortgage(Number(button.dataset.mortgage)));
+      document.querySelectorAll("[data-unmortgage]").forEach((button) => button.onclick = () => unmortgage(Number(button.dataset.unmortgage)));
+      document.querySelectorAll("[data-sell]").forEach((button) => button.onclick = () => sellBuilding(Number(button.dataset.sell)));
+    }
+    function renderPlayers() {
+      const container = $("#player-list");
+      container.innerHTML = state.players.map((player, index) => `<div class="score-row" style="opacity:${player.bankrupt ? .42 : 1}"><div class="score-name"><span class="player-token" style="--token-color:${colors[index % colors.length]}"></span><span>${player.name}${player.bankrupt ? " · out" : ""}</span>${state.turn === index && !player.bankrupt ? "<span style='color:var(--mint)'>●</span>" : ""}</div><span class="score-cash" style="color:${player.cash < 0 ? "var(--coral)" : "var(--paper)"}">${money(player.cash)}</span><span class="score-assets">${money(netWorth(index))} total</span></div>`).join("") || `<div style="padding:12px 0;color:var(--muted);font-size:11px">Player standings appear here.</div>`;
+    }
+    function renderLog() { $("#log-list").innerHTML = state.log.map((entry) => `<div class="log-entry">${entry}</div>`).join("") || `<div class="log-entry">The table is quiet. For now.</div>`; }
+    function renderTokens() {
+      document.querySelectorAll(".tile").forEach((tile) => {
+        const index = Number(tile.dataset.index); const owner = state.owners[index];
+        if (owner !== undefined) { tile.classList.add(`owner-${String.fromCharCode(97 + owner)}`); tile.style.setProperty("--owner-color", colors[owner % colors.length]); }
+        if (state.mortgaged[index]) tile.classList.add("mortgaged");
+        if (buildCount(index)) { tile.classList.add("buildings"); tile.style.setProperty("--building-color", buildCount(index) === 5 ? "#cf675b" : "#328961"); }
+        const playersHere = state.players.map((player, playerIndex) => ({ player, playerIndex })).filter(({ player }) => !player.bankrupt && player.position === index);
+        const row = tile.querySelector(".token-row"); row.innerHTML = playersHere.map(({ player, playerIndex }) => `<span class="token" style="--token-color:${colors[playerIndex % colors.length]}" title="${player.name}">${player.name.replace(/[^a-z0-9]/gi, "").slice(0, 1)}</span>`).join("");
+        if (playersHere.length) tile.classList.add("has-token");
+      });
+    }
+    function renderCenter() {
+      const note = $("#center-note"); const dice = $("#center-dice");
+      if (state.players.length && state.lastDice) { dice.innerHTML = state.lastDice.map((value) => `<span class="die">${["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"][value - 1]}</span>`).join(""); }
+      note.textContent = state.players.length ? `${active()?.name || "The table"} · ${state.phase === "pre-roll" ? "Waiting on the dice" : spaces[active()?.position || 0].name}` : "A little luck. A lot of nerve.";
+    }
+    function roll() {
+      if (state.phase !== "pre-roll" || active().jailed) return;
+      const dice = [1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)]; state.lastDice = dice; const isDouble = dice[0] === dice[1];
+      if (isDouble) state.doubles++; else state.doubles = 0;
+      if (state.doubles === 3) { log(`${active().name} rolled three doubles and goes to Jail.`); sendToJail(state.turn); state.phase = "post-roll"; state.doubles = 0; state.rolled = true; render(); maybeBot(); return; }
+      moveBy(dice[0] + dice[1], isDouble); state.rolled = true; render(); maybeBot();
+    }
+    function moveBy(amount, isDouble = false) {
+      const player = active(); const old = player.position; const next = (old + amount + 40) % 40;
+      if (old + amount >= 40) collect(player, 200, "passed GO");
+      player.position = next; state.phase = "resolving";
+      log(`${player.name} rolled ${state.lastDice.join(" + ")} and landed on ${spaces[next].name}.`);
+      resolveSpace(next, isDouble);
+    }
+    function moveTo(destination, collectGo = true) {
+      const player = active(); if (collectGo && destination < player.position) collect(player, 200, "passed GO"); player.position = destination; resolveSpace(destination, false);
+    }
+    function resolveSpace(index, isDouble) {
+      const player = active(); const space = spaces[index]; state.pending = null;
+      if (space.type === "property" || space.type === "railroad" || space.type === "utility") {
+        if (state.owners[index] === undefined) { state.phase = "decision"; state.pending = { isDouble }; }
+        else if (!owns(state.turn, index)) { const due = rentFor(index, state.lastDice.reduce((a, b) => a + b, 0)); if (due) payPlayer(state.turn, state.owners[index], due, `rent for ${space.name}`); else log(`${player.name} owes no rent on ${space.name}.`); afterLanding(isDouble); }
+        else { log(`${player.name} owns ${space.name}.`); afterLanding(isDouble); }
+      } else if (space.type === "tax") {
+        const amount = space.amount; if (space.name === "Income Tax" && state.rules.taxChoice) { state.pending = { taxChoice: true, isDouble }; state.phase = "tax-choice"; }
+        else { payBank(state.turn, amount, space.name); afterLanding(isDouble); }
+      } else if (space.type === "chance" || space.type === "chest") drawCard(space.type, isDouble);
+      else if (space.type === "goToJail") { sendToJail(state.turn); state.doubles = 0; state.phase = "post-roll"; }
+      else if (space.type === "parking" && state.rules.vacationCash && state.parkingPot) { const amount = state.parkingPot; state.parkingPot = 0; collect(player, amount, "Free Parking"); afterLanding(isDouble); }
+      else afterLanding(isDouble);
+      render();
+      if (state.phase === "tax-choice") showTaxChoice();
+    }
+    function afterLanding(isDouble) { if (state.gameOver) return; state.phase = "post-roll"; state.pending = { ...(state.pending || {}), isDouble }; }
+    function collect(player, amount, reason) { player.cash += amount; log(`${player.name} collected ${money(amount)} (${reason}).`); }
+    function addToBank(amount) { if (state.rules.vacationCash && amount > 0) state.parkingPot = (state.parkingPot || 0) + amount; }
+    function payBank(playerIndex, amount, reason) {
+      const player = state.players[playerIndex]; if (!player || player.bankrupt) return;
+      if (player.cash < amount) raiseFunds(playerIndex, amount);
+      if (player.cash < amount) { bankrupt(playerIndex, null); return; }
+      player.cash -= amount; addToBank(amount); log(`${player.name} paid ${money(amount)} (${reason}).`);
+    }
+    function payPlayer(fromIndex, toIndex, amount, reason) {
+      const payer = state.players[fromIndex]; const recipient = state.players[toIndex]; if (!payer || payer.bankrupt || !recipient) return;
+      if (payer.cash < amount) raiseFunds(fromIndex, amount);
+      if (payer.cash < amount) { bankrupt(fromIndex, toIndex); return; }
+      payer.cash -= amount; recipient.cash += amount; log(`${payer.name} paid ${recipient.name} ${money(amount)} (${reason}).`);
+    }
+    function raiseFunds(playerIndex, needed) {
+      const player = state.players[playerIndex];
+      for (const key of Object.keys(state.owners)) {
+        const index = Number(key); const space = spaces[index];
+        if (Number(state.owners[key]) !== playerIndex || state.mortgaged[index]) continue;
+        if (space.type === "property" && groupProperties(space.group).some((member) => buildCount(member) > 0)) continue;
+        if (player.cash >= needed) break;
+        state.mortgaged[index] = true; player.cash += Math.floor(space.price / 2); log(`${player.name} mortgaged ${space.name} to raise cash.`);
+      }
+      while (player.cash < needed) {
+        const candidates = Object.keys(state.housesOn).map(Number).filter((index) => Number(state.owners[index]) === playerIndex && buildCount(index) > 0 && buildCount(index) === Math.max(...groupProperties(spaces[index].group).map(buildCount))).sort((a, b) => buildCount(a) - buildCount(b));
+        if (!candidates.length) break;
+        const index = candidates[0]; sellBuilding(index, true, playerIndex);
+      }
+    }
+    function bankrupt(playerIndex, creditorIndex) {
+      const player = state.players[playerIndex]; if (!player || player.bankrupt) return;
+      if (creditorIndex !== null && creditorIndex !== undefined) {
+        const creditor = state.players[creditorIndex]; creditor.cash += Math.max(0, player.cash); player.cash = 0;
+        Object.keys(state.owners).forEach((key) => { if (Number(state.owners[key]) === playerIndex) state.owners[key] = creditorIndex; });
+        Object.keys(state.mortgaged).forEach((key) => { if (state.owners[key] === creditorIndex) { /* mortgage state stays with the deed */ } });
+        creditor.jailCards += player.jailCards; creditor.heldJailCards.push(...player.heldJailCards); player.jailCards = 0; player.heldJailCards = [];
+        log(`${player.name} went bankrupt to ${creditor.name}. Their assets transfer to the creditor.`);
+      } else {
+        player.cash = 0;
+        Object.keys(state.owners).forEach((key) => { if (Number(state.owners[key]) === playerIndex) { const buildings = buildCount(Number(key)); if (buildings === 5) state.hotels++; else state.houses += buildings; delete state.owners[key]; delete state.mortgaged[key]; state.housesOn[key] = 0; } });
+        log(`${player.name} went bankrupt to the bank. Their properties return to the market.`);
+      }
+      player.bankrupt = true;
+      if (living().length <= 1) { state.gameOver = true; state.phase = "game-over"; log(`${living()[0]?.name || "Nobody"} wins the game.`); }
+      else if (state.turn === playerIndex) { state.phase = "post-roll"; }
+    }
+    function buyProperty(index) {
+      const space = spaces[index]; const player = active(); if (player.cash < space.price) return;
+      player.cash -= space.price; state.owners[index] = state.turn; log(`${player.name} bought ${space.name} for ${money(space.price)}.`); afterLanding(!!state.pending?.isDouble); closeModal(); render(); maybeBot();
+    }
+    function declineProperty() {
+      const isDouble = !!state.pending?.isDouble; log(`${active().name} passed on ${spaces[active().position].name}.`);
+      if (state.rules.auctions) startAuction(active().position, isDouble);
+      else { afterLanding(isDouble); render(); maybeBot(); }
+    }
+    function startAuction(index, isDouble) {
+      const participants = living().map((player) => state.players.indexOf(player));
+      state.auction = { index, isDouble, participants, position: 0, highBid: 0, highBidder: null, currentBidder: participants[0], passed: new Set() }; state.phase = "auction"; render(); maybeBot();
+    }
+    function renderAuction() {
+      const auction = state.auction; const bidder = state.players[auction.currentBidder]; const high = auction.highBidder === null ? "No bids yet" : `${state.players[auction.highBidder].name} · ${money(auction.highBid)}`;
+      $("#action-panel").innerHTML = `<div class="section-heading">Open auction <span class="phase-label">${auction.participants.length} bidders</span></div><div class="landing-title">${spaces[auction.index].name}</div><p class="action-copy">Highest bid wins. Any player can join; passing removes you from the bidding.</p><div class="auction-top"><span>Current high bid</span><strong>${high}</strong></div><div class="auction-turn">${bidder?.name || "Auction complete"}${bidder?.bot ? " · BOT" : "'s bid"}</div>${bidder && !bidder.bot ? `<div class="auction-controls"><input type="number" id="bid-input" min="${auction.highBid + 1}" max="${bidder.cash}" placeholder="Amount"><button class="primary" id="place-bid" ${bidder.cash <= auction.highBid ? "disabled" : ""}>Bid</button><button class="secondary" id="pass-bid">Pass</button></div>` : `<p class="action-copy">Bot is considering a bid…</p>`}`;
+      const bidButton = $("#place-bid"); if (bidButton) bidButton.onclick = () => placeBid(Number($("#bid-input").value));
+      const passButton = $("#pass-bid"); if (passButton) passButton.onclick = passBid;
+    }
+    function placeBid(amount) {
+      const auction = state.auction; const playerIndex = auction.currentBidder; const player = state.players[playerIndex];
+      if (!Number.isInteger(amount) || amount <= auction.highBid || amount > player.cash) { toast("Enter a whole-dollar bid above the current amount."); return; }
+      auction.highBid = amount; auction.highBidder = playerIndex; log(`${player.name} bid ${money(amount)} for ${spaces[auction.index].name}.`); nextBidder();
+    }
+    function passBid() { const auction = state.auction; auction.passed.add(auction.currentBidder); log(`${state.players[auction.currentBidder].name} passed on the auction.`); nextBidder(); }
+    function nextBidder() {
+      const auction = state.auction; const eligible = auction.participants.filter((index) => !auction.passed.has(index));
+      if (eligible.length <= 1 && (auction.highBidder !== null || eligible.length === 0)) { finishAuction(); return; }
+      const current = auction.currentBidder; const currentPosition = auction.participants.indexOf(current);
+      for (let step = 1; step <= auction.participants.length; step++) { const candidate = auction.participants[(currentPosition + step) % auction.participants.length]; if (!auction.passed.has(candidate) && candidate !== current) { auction.currentBidder = candidate; break; } }
+      if (auction.highBidder !== null && eligible.length === 1) finishAuction(); else { render(); maybeBot(); }
+    }
+    function finishAuction() {
+      const auction = state.auction;
+      if (auction.highBidder !== null) { const winner = state.players[auction.highBidder]; winner.cash -= auction.highBid; state.owners[auction.index] = auction.highBidder; log(`${winner.name} won ${spaces[auction.index].name} for ${money(auction.highBid)}.`); }
+      else log(`${spaces[auction.index].name} remains unowned.`);
+      state.auction = null; afterLanding(auction.isDouble); render(); maybeBot();
+    }
+    function endTurn() {
+      if (state.phase !== "post-roll") return;
+      if (state.gameOver) return;
+      if (state.doubles && !active().jailed && !active().bankrupt) { state.phase = "pre-roll"; state.rolled = false; render(); maybeBot(); return; }
+      state.doubles = 0; state.rolled = false;
+      let next = state.turn;
+      do { next = (next + 1) % state.players.length; } while (state.players[next].bankrupt);
+      if (next <= state.turn) state.round++;
+      state.turn = next; state.phase = "pre-roll"; state.pending = null; render(); maybeBot();
+    }
+    function sendToJail(playerIndex) { const player = state.players[playerIndex]; player.position = 10; player.jailed = true; player.jailTurns = 0; state.doubles = 0; log(`${player.name} is in Jail.`); }
+    function jailRoll() {
+      if (!active().jailed) return;
+      const player = active(); const dice = [1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)]; state.lastDice = dice;
+      if (dice[0] === dice[1]) { player.jailed = false; player.jailTurns = 0; log(`${player.name} rolled doubles and is released from Jail.`); moveBy(dice[0] + dice[1], false); }
+      else { player.jailTurns++; log(`${player.name} failed to roll doubles (${player.jailTurns}/3).`); if (player.jailTurns >= 3) { player.jailed = false; player.jailTurns = 0; payBank(state.turn, 50, "Jail fine"); if (!player.bankrupt) moveBy(dice[0] + dice[1], false); else state.phase = "post-roll"; } else state.phase = "post-roll"; }
+      render(); maybeBot();
+    }
+    function releaseFromJail(payFine) {
+      const player = active(); if (!player.jailed) return;
+      if (payFine) { if (player.cash < 50) { raiseFunds(state.turn, 50); if (player.cash < 50) return bankrupt(state.turn, null); } player.cash -= 50; log(`${player.name} paid $50 to leave Jail.`); }
+      else { player.jailCards--; const held = player.heldJailCards.pop(); if (held) state.discard[held.deck].push(held.card); log(`${player.name} used a Get Out of Jail Free card.`); }
+      player.jailed = false; player.jailTurns = 0; state.phase = "pre-roll"; jailRollAsNormal();
+    }
+    function jailRollAsNormal() { const dice = [1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)]; state.lastDice = dice; state.doubles = 0; moveBy(dice[0] + dice[1], false); render(); maybeBot(); }
+    function sendCardToJail() { sendToJail(state.turn); state.phase = "post-roll"; }
+    function drawCard(deck, isDouble) {
+      if (!state.decks[deck].length) { state.decks[deck] = shuffle(state.discard[deck]); state.discard[deck] = []; }
+      const card = state.decks[deck].pop(); log(`<strong>${deck === "chance" ? "Chance" : "Community Chest"}:</strong> ${card.text}`);
+      if (card.kind === "move") { moveTo(card.to, card.collect); if (state.phase === "decision") state.pending.isDouble = isDouble; else if (state.phase !== "post-roll") afterLanding(isDouble); }
+      else if (card.kind === "back") { const next = (active().position - card.count + 40) % 40; active().position = next; resolveSpace(next, isDouble); }
+      else if (card.kind === "nearest") { const current = active().position; const indexes = spaces.map((space, index) => space.type === card.target && index > current ? index : -1).filter((index) => index >= 0); const target = indexes[0] ?? spaces.findIndex((space) => space.type === card.target); if (target <= current) collect(active(), 200, "passed GO"); active().position = target; const owner = state.owners[target]; if (owner !== undefined && owner !== state.turn) { const diceTotal = state.lastDice.reduce((a, b) => a + b, 0); const due = card.target === "utility" ? diceTotal * card.multiplier : rentFor(target, diceTotal, card.twice ? 2 : 1); if (due) payPlayer(state.turn, owner, due, `card rent for ${spaces[target].name}`); } else if (owner === undefined) { state.phase = "decision"; state.pending = { isDouble, cardMultiplier: card.multiplier }; render(); return; } afterLanding(isDouble); }
+      else if (card.kind === "money") { if (card.amount > 0) collect(active(), card.amount, "card"); else payBank(state.turn, -card.amount, "card"); afterLanding(isDouble); }
+      else if (card.kind === "each") { state.players.forEach((other, index) => { if (index !== state.turn && !other.bankrupt) { if (card.amount > 0) payPlayer(index, state.turn, card.amount, "card"); else payPlayer(state.turn, index, -card.amount, "card"); } }); afterLanding(isDouble); }
+      else if (card.kind === "repair") { const count = Object.keys(state.housesOn).reduce((sum, index) => Number(state.owners[index]) === state.turn ? sum + (buildCount(Number(index)) === 5 ? 0 : buildCount(Number(index))) : sum, 0); const hotels = Object.keys(state.housesOn).filter((index) => Number(state.owners[index]) === state.turn && buildCount(Number(index)) === 5).length; payBank(state.turn, count * card.house + hotels * card.hotel, "property repairs"); afterLanding(isDouble); }
+      else if (card.kind === "jailCard") { active().jailCards++; active().heldJailCards.push({ deck, card }); afterLanding(isDouble); }
+      else if (card.kind === "jail") { state.discard[deck].push(card); sendCardToJail(); }
+      if (card.kind !== "jailCard" && card.kind !== "jail") state.discard[deck].push(card);
+    }
+    function showTaxChoice() {
+      const player = active(); openModal(`<h2>Income tax</h2><p class="modal-copy">Choose how to settle your tax bill.</p><div class="button-row"><button class="primary" id="tax-flat">Pay $200</button><button class="secondary" id="tax-worth">Pay 10% of net worth · ${money(Math.ceil(netWorth(state.turn) * .1))}</button></div>`);
+      $("#tax-flat").onclick = () => settleTax(200); $("#tax-worth").onclick = () => settleTax(Math.ceil(netWorth(state.turn) * .1));
+    }
+    function settleTax(amount) { closeModal(); payBank(state.turn, amount, "Income Tax"); afterLanding(state.pending?.isDouble); render(); maybeBot(); }
+    function build(index) {
+      const space = spaces[index]; const members = groupProperties(space.group); const current = buildCount(index); const cost = groups[space.group].build;
+      if (!hasMonopoly(state.turn, space.group) || active().cash < cost || current >= 5) return;
+      if (members.some((member) => state.mortgaged[member])) return;
+      if (!members.every((member) => buildCount(member) >= current) || (current === 4 ? state.hotels < 1 : state.houses < 1)) return;
+      active().cash -= cost;
+      if (current === 4) { state.hotels--; state.houses += 4; state.housesOn[index] = 5; }
+      else { state.houses--; state.housesOn[index] = current + 1; }
+      log(`${active().name} built on ${space.name} for ${money(cost)}.`); render();
+    }
+    function sellBuilding(index, quiet = false, playerIndex = state.turn) {
+      const space = spaces[index]; const current = buildCount(index); if (!current) return;
+      const members = groupProperties(space.group); const groupMax = Math.max(...members.map(buildCount));
+      if (current < groupMax) return;
+      if (current === 5) { state.housesOn[index] = 4; state.hotels++; state.houses -= 4; }
+      else { state.housesOn[index] = current - 1; state.houses++; }
+      const proceeds = Math.floor(groups[space.group].build / 2); state.players[playerIndex].cash += proceeds;
+      if (!quiet) log(`${state.players[playerIndex].name} sold a building on ${space.name} for ${money(proceeds)}.`);
+      if (!quiet) render();
+    }
+    function mortgage(index) { const space = spaces[index]; if (buildCount(index) || state.mortgaged[index]) return; const groupClear = !space.group || groupProperties(space.group).every((member) => buildCount(member) === 0); if (!groupClear) return; state.mortgaged[index] = true; active().cash += Math.floor(space.price / 2); log(`${active().name} mortgaged ${space.name} for ${money(Math.floor(space.price / 2))}.`); render(); }
+    function unmortgage(index) { const space = spaces[index]; const cost = Math.ceil(space.price / 2 * 1.1); if (!state.mortgaged[index] || active().cash < cost) return; active().cash -= cost; delete state.mortgaged[index]; log(`${active().name} unmortgaged ${space.name} for ${money(cost)}.`); render(); }
+    function showTrade() {
+      if (!state.players.length || state.gameOver || state.phase === "auction") return;
+      const from = state.turn; const targets = living().map((player, index) => ({ player, index })).filter(({ index }) => index !== from);
+      if (!targets.length) return;
+      const available = (playerIndex) => Object.keys(state.owners).filter((key) => Number(state.owners[key]) === playerIndex && !buildCount(Number(key))).map((key) => Number(key));
+      openModal(`<h2>Propose a trade</h2><p class="modal-copy">Choose deeds, cash, and a jail-free card for each side. Only the other player can accept.</p><label class="form-field">Trade with<select id="trade-target">${targets.map(({ player, index }) => `<option value="${index}">${player.name}</option>`).join("")}</select></label><div class="trade-offer" style="margin:15px 0"><div class="trade-side"><h3>${state.players[from].name} offers</h3><input class="trade-cash" id="trade-cash-out" type="number" min="0" max="${state.players[from].cash}" placeholder="Cash"><div id="trade-out-properties"></div><div id="trade-out-card"></div></div><div class="trade-side"><h3>In return</h3><input class="trade-cash" id="trade-cash-in" type="number" min="0" placeholder="Cash"><div id="trade-in-properties"></div><div id="trade-in-card"></div></div></div><div class="button-row"><button class="primary" id="trade-propose">Propose</button><button class="secondary" id="trade-cancel">Cancel</button></div>`);
+      const redrawTradeOptions = () => { const target = Number($("#trade-target").value); $("#trade-out-properties").innerHTML = available(from).map((index) => `<label class="trade-check"><input type="checkbox" value="${index}">${spaces[index].name}</label>`).join("") || `<small style="color:var(--muted)">No available deeds</small>`; $("#trade-in-properties").innerHTML = available(target).map((index) => `<label class="trade-check"><input type="checkbox" value="${index}">${spaces[index].name}</label>`).join("") || `<small style="color:var(--muted)">No available deeds</small>`; $("#trade-out-card").innerHTML = state.players[from].jailCards ? `<label class="trade-check"><input id="trade-card-out" type="checkbox">Get Out of Jail Free</label>` : ""; $("#trade-in-card").innerHTML = state.players[target].jailCards ? `<label class="trade-check"><input id="trade-card-in" type="checkbox">Get Out of Jail Free</label>` : ""; };
+      redrawTradeOptions(); $("#trade-target").onchange = redrawTradeOptions; $("#trade-cancel").onclick = closeModal;
+      $("#trade-propose").onclick = () => {
+        const target = Number($("#trade-target").value); const cashOut = Number($("#trade-cash-out").value || 0); const cashIn = Number($("#trade-cash-in").value || 0);
+        if (cashOut < 0 || cashIn < 0 || cashOut > state.players[from].cash || cashIn > state.players[target].cash) return toast("One of those cash amounts is not available.");
+        const out = [...document.querySelectorAll("#trade-out-properties input:checked")].map((input) => Number(input.value)); const incoming = [...document.querySelectorAll("#trade-in-properties input:checked")].map((input) => Number(input.value));
+        const cardOut = !!$("#trade-card-out")?.checked; const cardIn = !!$("#trade-card-in")?.checked;
+        closeModal(); offerTrade({ from, target, cashOut, cashIn, out, incoming, cardOut, cardIn });
+      };
+    }
+    function offerTrade(offer) {
+      const target = state.players[offer.target];
+      const summary = `${state.players[offer.from].name} offers ${money(offer.cashOut)} and ${[...offer.out.map((index) => spaces[index].name), ...(offer.cardOut ? ["a jail-free card"] : [])].join(", ") || "no deeds"} for ${money(offer.cashIn)} and ${[...offer.incoming.map((index) => spaces[index].name), ...(offer.cardIn ? ["a jail-free card"] : [])].join(", ") || "no deeds"}.`;
+      if (target.bot) { const valueIn = offer.out.reduce((sum, index) => sum + spaces[index].price, 0) + offer.cashOut; const valueOut = offer.incoming.reduce((sum, index) => sum + spaces[index].price, 0) + offer.cashIn; if (valueIn >= valueOut * .85) { acceptTrade(offer); toast(`${target.name} accepted your offer.`); } else toast(`${target.name} declined the trade.`); return; }
+      openModal(`<h2>Trade offer</h2><p class="modal-copy">${summary}</p><div class="button-row"><button class="primary" id="trade-accept">Accept</button><button class="secondary" id="trade-reject">Decline</button></div>`);
+      $("#trade-accept").onclick = () => { acceptTrade(offer); closeModal(); toast("Trade accepted."); }; $("#trade-reject").onclick = () => { closeModal(); toast("Trade declined."); };
+    }
+    function acceptTrade(offer) {
+      const from = state.players[offer.from]; const target = state.players[offer.target];
+      if (from.cash < offer.cashOut || target.cash < offer.cashIn || (offer.cardOut && !from.jailCards) || (offer.cardIn && !target.jailCards) || offer.out.some((index) => !owns(offer.from, index)) || offer.incoming.some((index) => !owns(offer.target, index))) return toast("The offer is no longer available.");
+      from.cash = from.cash - offer.cashOut + offer.cashIn; target.cash = target.cash - offer.cashIn + offer.cashOut;
+      offer.out.forEach((index) => state.owners[index] = offer.target); offer.incoming.forEach((index) => state.owners[index] = offer.from);
+      if (offer.cardOut) transferJailCard(from, target);
+      if (offer.cardIn) transferJailCard(target, from);
+      log(`${from.name} and ${target.name} completed a trade.`); render();
+    }
+    function transferJailCard(from, to) { const held = from.heldJailCards.pop(); if (!held) return; from.jailCards--; to.jailCards++; to.heldJailCards.push(held); }
+    function maybeBot() {
+      const player = active(); if (!player?.bot || state.gameOver) return;
+      const phase = state.phase; const delay = 500;
+      setTimeout(() => {
+        if (active() !== player || state.phase !== phase || state.gameOver) return;
+        if (phase === "pre-roll") { if (player.jailed) { if (player.jailCards) releaseFromJail(false); else if (player.cash > 600 || player.jailTurns >= 2) releaseFromJail(true); else jailRoll(); } else roll(); }
+        else if (phase === "decision") { const space = spaces[player.position]; if (player.cash > space.price + 180 || (space.price <= 120 && player.cash > space.price + 80)) buyProperty(player.position); else declineProperty(); }
+        else if (phase === "post-roll") { botManage(); endTurn(); }
+        else if (phase === "auction") {
+          const auction = state.auction; const property = spaces[auction.index]; const value = property.price || 100; const strategic = property.group && groupProperties(property.group).some((index) => owns(state.turn, index)); const max = Math.min(player.cash - 100, Math.round(value * (strategic ? 1.1 : .65)));
+          if (max > auction.highBid && Math.random() < (strategic ? .75 : .45)) placeBid(Math.max(auction.highBid + 1, Math.min(max, auction.highBid + Math.max(10, Math.round(value * .15))))); else passBid();
+        }
+      }, delay);
+    }
+    function botManage() {
+      const player = active();
+      Object.keys(state.owners).map(Number).filter((index) => owns(state.turn, index)).forEach((index) => { const space = spaces[index]; if (space.type !== "property" || !hasMonopoly(state.turn, space.group)) return; const group = groupProperties(space.group); const min = Math.min(...group.map(buildCount)); const target = group.find((member) => buildCount(member) === min); const cost = groups[space.group].build; if (player.cash > cost + 250 && state.houses > 0 && buildCount(target) < 4) build(target); });
+    }
+    $("#settings-button").onclick = showSettings; $("#new-game-button").onclick = showSetup; $("#trade-button").onclick = showTrade;
+    buildBoard(); render(); showSetup();
+  </script>
+</body>
+</html>
