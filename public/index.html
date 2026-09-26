@@ -10,10 +10,13 @@
 
 <div id="lobby" class="screen">
   <div class="lobby-box">
-    <h1>🎩 Monopoly Online</h1>
+    <div class="brand-mark">M</div>
+    <h1>Monopoly Online</h1>
+    <p class="lobby-tagline">Buy well. Build evenly. Stay in the game.</p>
     <input id="nameInput" placeholder="Your name" maxlength="16" />
     <input id="roomInput" placeholder="Room code (e.g. abc123)" maxlength="20" />
-    <button id="joinBtn">Join Room</button>
+    <button id="joinBtn" class="primary-action">Join Room</button>
+    <button id="createRoomBtn" class="secondary-action">Create a private game</button>
     <p id="lobbyError" class="error"></p>
     <div id="waitingRoom" class="hidden">
       <h3>Players in room:</h3>
@@ -28,11 +31,46 @@
 
 <div id="game" class="screen hidden">
   <div class="game-layout">
-    <div class="board-wrap">
-      <div id="board" class="board"></div>
+    <aside class="room-column">
+      <div class="room-brand"><span class="brand-mark">M</span><span>Monopoly Online</span></div>
+      <section class="room-share">
+        <div class="panel-heading">Share this game</div>
+        <div class="share-row"><input id="shareLink" readonly aria-label="Room link"><button id="copyRoomBtn" title="Copy room link">Copy</button></div>
+        <div id="copyStatus" class="copy-status" aria-live="polite"></div>
+      </section>
+      <section class="chat panel-block">
+        <div class="panel-heading">Chat</div>
+        <div id="chatMessages" class="chat-messages"></div>
+        <div class="chat-input-row"><input id="chatInput" placeholder="Say something..." aria-label="Chat message"><button id="sendChatBtn" aria-label="Send message">➤</button></div>
+      </section>
     </div>
-    <div class="sidebar">
-      <div id="turnBanner" class="turn-banner"></div>
+
+    <main class="table-column">
+      <div class="table-topline"><span id="turnBanner" class="turn-banner"></span><span id="roomLabel" class="room-label"></span></div>
+      <div class="board-wrap">
+        <div id="board" class="board"></div>
+        <div id="appearanceOverlay" class="appearance-overlay hidden">
+          <div class="appearance-dialog">
+            <h2>Select your player appearance</h2>
+            <div id="appearanceColors" class="appearance-colors">
+              <button class="appearance-color" data-color="#c1dd4b" style="--swatch:#c1dd4b" aria-label="Lime"></button>
+              <button class="appearance-color" data-color="#f8c845" style="--swatch:#f8c845" aria-label="Gold"></button>
+              <button class="appearance-color" data-color="#ff8741" style="--swatch:#ff8741" aria-label="Orange"></button>
+              <button class="appearance-color" data-color="#d84a4c" style="--swatch:#d84a4c" aria-label="Red"></button>
+              <button class="appearance-color" data-color="#54a3e3" style="--swatch:#54a3e3" aria-label="Blue"></button>
+              <button class="appearance-color" data-color="#5dd8df" style="--swatch:#5dd8df" aria-label="Aqua"></button>
+              <button class="appearance-color" data-color="#15aa9a" style="--swatch:#15aa9a" aria-label="Teal"></button>
+              <button class="appearance-color" data-color="#69e153" style="--swatch:#69e153" aria-label="Green"></button>
+              <button class="appearance-color" data-color="#aa7e68" style="--swatch:#aa7e68" aria-label="Brown"></button>
+              <button class="appearance-color" data-color="#db49ab" style="--swatch:#db49ab" aria-label="Magenta"></button>
+              <button class="appearance-color" data-color="#f56e97" style="--swatch:#f56e97" aria-label="Pink"></button>
+              <button class="appearance-color" data-color="#7851dc" style="--swatch:#7851dc" aria-label="Violet"></button>
+            </div>
+            <button id="joinGameBtn" class="join-game-button">Join game <span aria-hidden="true">→</span></button>
+            <div id="appearanceError" class="appearance-error" aria-live="polite"></div>
+          </div>
+        </div>
+      </div>
       <div class="dice-area">
         <div id="diceDisplay" class="dice-display">🎲 🎲</div>
         <button id="rollBtn">Roll Dice</button>
@@ -42,6 +80,10 @@
         <button id="payJailBtn" class="hidden">Pay $50 to leave Jail</button>
         <button id="jailCardBtn" class="hidden">Use Jail Free Card</button>
       </div>
+    </main>
+
+    <aside class="sidebar">
+      <div class="panel-block players-panel"><div class="panel-heading">Players</div><div id="players" class="players"></div></div>
       <div id="auctionArea" class="hidden">
         <h3>Auction: <span id="auctionSpaceName"></span></h3>
         <p>Highest bid: $<span id="auctionHighBid">0</span> by <span id="auctionHighBidder">-</span></p>
@@ -49,8 +91,7 @@
         <button id="bidBtn">Bid</button>
         <button id="passBtn">Pass</button>
       </div>
-      <div id="players" class="players"></div>
-      <div class="manage">
+      <div class="manage panel-block">
         <h3>Manage Properties</h3>
         <select id="myPropsSelect"></select>
         <div class="manage-buttons">
@@ -60,11 +101,14 @@
           <button id="unmortgageBtn">Unmortgage</button>
         </div>
       </div>
-      <div id="log" class="log"></div>
-      <div class="chat">
-        <div id="chatMessages" class="chat-messages"></div>
-        <input id="chatInput" placeholder="Say something..." />
+      <div id="roomSettings" class="panel-block room-settings hidden">
+        <div class="panel-heading">Game settings</div>
+        <label class="rule-toggle"><input type="checkbox" id="roomRuleAuction" checked> Auction on decline</label>
+        <label class="rule-toggle"><input type="checkbox" id="roomRuleVacation"> Vacation cash</label>
+        <label class="rule-toggle"><input type="checkbox" id="roomRuleDoubleRent" checked> Double rent on full sets</label>
       </div>
+      <div class="panel-block rules-summary"><div class="panel-heading">Gameplay rules</div><div id="currentRuleList"></div></div>
+      <div id="log" class="log panel-block"></div>
     </div>
   </div>
 </div>

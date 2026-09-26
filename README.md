@@ -42,3 +42,6 @@ Then open http://localhost:3000 in multiple tabs to test with several players.
 - Trading has no UI (logic is server-ready, just needs a modal in `client.js`)
 - No spectator mode or room persistence across server restarts (in-memory only — fine for a single Render instance, but a restart clears active games)
 - Selling a hotel currently converts it straight to 4 houses rather than enforcing even sell-down across the group first
+
+## Game Link
+https://monopoly-app-zel6.onrender.com

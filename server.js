@@ -41,6 +41,13 @@ io.on("connection", (socket) => {
     broadcast(roomId);
   });
 
+  socket.on("choose_appearance", ({ color }, cb) => {
+    const game = rooms.get(currentRoomId);
+    const result = game ? game.chooseAppearance(playerId, color) : { error: "Join a room first" };
+    if (cb) cb(result);
+    broadcast(currentRoomId);
+  });
+
   socket.on("start_game", (_, cb) => {
     const game = rooms.get(currentRoomId);
     if (!game) return;

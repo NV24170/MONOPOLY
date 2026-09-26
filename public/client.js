@@ -3,7 +3,8 @@ const socket = io();
 let BOARD = [];
 let myId = null;
 let currentState = null;
-const PLAYER_COLORS = ["#e53935", "#1e88e5", "#43a047", "#fdd835", "#8e24aa", "#fb8c00"];
+let selectedColor = null;
+const PLAYER_COLORS = ["#c1dd4b", "#f8c845", "#ff8741", "#d84a4c", "#54a3e3", "#5dd8df", "#15aa9a", "#69e153", "#aa7e68", "#db49ab", "#f56e97", "#7851dc"];
 
 const GROUP_COLORS = {
   brown: "#955436", lightblue: "#aae0fa", pink: "#d93a96", orange: "#f7941d",
@@ -23,6 +24,10 @@ function gridPos(i) {
   return { row: 1 + (i - 30), col: 11 };
 }
 
+function playerColor(player, index) {
+  return player.color || PLAYER_COLORS[index % PLAYER_COLORS.length];
+}
+
 function renderBoardShell() {
   const board = document.getElementById("board");
   board.innerHTML = "";
@@ -33,6 +38,7 @@ function renderBoardShell() {
     div.id = "space-" + i;
     div.style.gridRow = row;
     div.style.gridColumn = col;
+    div.style.setProperty("--tile-index", i);
     let html = "";
     if (space.group) {
       html += `<div class="color-bar" style="background:${GROUP_COLORS[space.group]}"></div>`;
@@ -46,8 +52,47 @@ function renderBoardShell() {
   });
   const center = document.createElement("div");
   center.className = "center-cell";
-  center.textContent = "MONOPOLY";
+  center.innerHTML = `<div class="center-room"><strong>MONOPOLY</strong><span id="centerRoomMessage">Waiting for players</span><button id="roomStartBtn" disabled>Start Game</button></div>`;
   board.appendChild(center);
+  document.getElementById("roomStartBtn").onclick = startRoomGame;
+  document.querySelectorAll(".appearance-color").forEach(button => {
+    button.onclick = () => setSelectedAppearance(button.dataset.color);
+  });
+  document.getElementById("joinGameBtn").onclick = () => {
+    if (!selectedColor) return;
+    socket.emit("choose_appearance", { color: selectedColor }, (res) => {
+      document.getElementById("appearanceError").textContent = res?.error || "";
+    });
+  };
+}
+
+function setSelectedAppearance(color) {
+  selectedColor = color;
+  document.querySelectorAll(".appearance-color").forEach(button => {
+    button.classList.toggle("selected", button.dataset.color === color);
+  });
+}
+
+function syncAppearancePicker(state) {
+  const player = state.players.find(p => p.id === myId);
+  const choosing = !!player && !player.ready;
+  const overlay = document.getElementById("appearanceOverlay");
+  const board = document.getElementById("board");
+  overlay.classList.toggle("hidden", !choosing);
+  board.classList.toggle("appearance-blurred", choosing);
+  document.getElementById("appearanceError").textContent = "";
+  if (!choosing) return;
+
+  const unavailable = state.players.filter(p => p.id !== myId && !p.bankrupt).map(p => p.color);
+  document.querySelectorAll(".appearance-color").forEach(button => {
+    const taken = unavailable.includes(button.dataset.color);
+    button.disabled = taken;
+    button.classList.toggle("taken", taken);
+  });
+  if (!selectedColor || unavailable.includes(selectedColor)) {
+    selectedColor = PLAYER_COLORS.find(color => !unavailable.includes(color)) || player.color;
+  }
+  setSelectedAppearance(selectedColor);
 }
 
 // ---- Lobby ----
@@ -68,16 +113,53 @@ document.getElementById("joinBtn").onclick = () => {
   });
 };
 
+document.getElementById("createRoomBtn").onclick = () => {
+  document.getElementById("roomInput").value = Math.random().toString(36).slice(2, 8);
+  document.getElementById("joinBtn").click();
+};
+
+document.getElementById("copyRoomBtn").onclick = async () => {
+  const status = document.getElementById("copyStatus");
+  try {
+    await navigator.clipboard.writeText(document.getElementById("shareLink").value);
+    status.textContent = "Invite link copied";
+  } catch {
+    status.textContent = "Copy the invite link from the field above";
+    document.getElementById("shareLink").select();
+  }
+};
+
+function startGameWithRules(rules) {
+  socket.emit("update_rules", rules, () => {
+    socket.emit("start_game", {}, (res) => {
+      if (res.error) alert(res.error);
+    });
+  });
+}
+
+function roomRules() {
+  return {
+    auctionOnDecline: document.getElementById("roomRuleAuction").checked,
+    vacationCash: document.getElementById("roomRuleVacation").checked,
+    doubleRentOnMonopoly: document.getElementById("roomRuleDoubleRent").checked,
+  };
+}
+
+function startRoomGame() {
+  startGameWithRules(roomRules());
+}
+
 document.getElementById("startBtn").onclick = () => {
-  socket.emit("update_rules", {
+  startGameWithRules({
     auctionOnDecline: document.getElementById("ruleAuction").checked,
     vacationCash: document.getElementById("ruleVacation").checked,
     doubleRentOnMonopoly: document.getElementById("ruleDoubleRent").checked,
   });
-  socket.emit("start_game", {}, (res) => {
-    if (res.error) alert(res.error);
-  });
 };
+
+["roomRuleAuction", "roomRuleVacation", "roomRuleDoubleRent"].forEach(id => {
+  document.getElementById(id).addEventListener("change", () => socket.emit("update_rules", roomRules()));
+});
 
 // Auto-fill room from URL
 window.addEventListener("load", () => {
@@ -117,11 +199,17 @@ document.getElementById("unmortgageBtn").onclick = () => {
 };
 
 document.getElementById("chatInput").addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && e.target.value.trim()) {
-    socket.emit("chat_message", { text: e.target.value.trim() });
-    e.target.value = "";
-  }
+  if (e.key === "Enter") sendChat();
 });
+document.getElementById("sendChatBtn").onclick = sendChat;
+
+function sendChat() {
+  const input = document.getElementById("chatInput");
+  const text = input.value.trim();
+  if (!text) return;
+  socket.emit("chat_message", { text });
+  input.value = "";
+}
 
 function logIfError(res) {
   if (res && res.error) alert(res.error);
@@ -141,7 +229,29 @@ socket.on("state", (state) => {
   if (state.started) {
     document.getElementById("lobby").classList.add("hidden");
     document.getElementById("game").classList.remove("hidden");
+    document.getElementById("roomSettings").classList.add("hidden");
+    document.querySelector(".rules-summary").classList.remove("hidden");
+    document.querySelector(".manage").classList.remove("hidden");
+    document.getElementById("appearanceOverlay").classList.add("hidden");
+    document.getElementById("board").classList.remove("appearance-blurred");
+    document.getElementById("roomStartBtn").classList.add("hidden");
     renderGame(state);
+  } else if (myId) {
+    document.getElementById("lobby").classList.add("hidden");
+    document.getElementById("game").classList.remove("hidden");
+    renderGame(state);
+    document.getElementById("turnBanner").textContent = "Waiting for players";
+    const readyCount = state.players.filter(player => player.ready).length;
+    const canStart = state.players.length >= 2 && readyCount === state.players.length;
+    document.getElementById("roomStartBtn").disabled = !canStart;
+    document.getElementById("centerRoomMessage").textContent = state.players.length < 2 ? "Waiting for players..." : canStart ? "Everyone is in · ready to play" : `${readyCount} of ${state.players.length} players ready`;
+    document.getElementById("roomSettings").classList.remove("hidden");
+    document.querySelector(".rules-summary").classList.add("hidden");
+    document.querySelector(".manage").classList.add("hidden");
+    document.getElementById("roomRuleAuction").checked = !!state.rules.auctionOnDecline;
+    document.getElementById("roomRuleVacation").checked = !!state.rules.vacationCash;
+    document.getElementById("roomRuleDoubleRent").checked = !!state.rules.doubleRentOnMonopoly;
+    syncAppearancePicker(state);
   } else {
     const list = document.getElementById("playerList");
     list.innerHTML = "";
@@ -151,6 +261,16 @@ socket.on("state", (state) => {
       list.appendChild(li);
     });
   }
+  const roomLabel = document.getElementById("roomLabel");
+  roomLabel.textContent = state.roomId ? `Room ${state.roomId}` : "";
+  document.getElementById("shareLink").value = state.roomId ? `${window.location.origin}/?room=${encodeURIComponent(state.roomId)}` : "";
+  const rules = state.rules || {};
+  document.getElementById("currentRuleList").innerHTML = [
+    ["Auction on decline", rules.auctionOnDecline],
+    ["Vacation cash", rules.vacationCash],
+    ["Double rent on full sets", rules.doubleRentOnMonopoly],
+    ["Rent-free while in jail", rules.rentFreeInJail],
+  ].map(([label, enabled]) => `<div class="rule-summary-row"><span>${label}</span><span class="rule-state ${enabled ? "on" : "off"}">${enabled ? "On" : "Off"}</span></div>`).join("");
 });
 
 function renderGame(state) {
@@ -199,7 +319,8 @@ function renderGame(state) {
   state.players.forEach((p, idx) => {
     const div = document.createElement("div");
     div.className = "player-card" + (p.id === state.currentPlayerId ? " current" : "");
-    div.innerHTML = `<span><span class="swatch" style="background:${PLAYER_COLORS[idx % PLAYER_COLORS.length]}"></span>${p.name}${p.bankrupt ? " (bankrupt)" : ""}${p.inJail ? " 🔒" : ""}</span><span>$${p.cash}</span>`;
+    const location = BOARD[p.position]?.name || "Unknown space";
+    div.innerHTML = `<span><span class="swatch" style="background:${playerColor(p, idx)}">${idx + 1}</span>${p.name}${p.bankrupt ? " (bankrupt)" : ""}${p.inJail ? " 🔒" : ""}</span><span class="player-location" title="${location}">${location}</span><span>$${p.cash}</span>`;
     playersEl.appendChild(div);
   });
 
@@ -209,12 +330,17 @@ function renderGame(state) {
     const ownerEl = document.getElementById("owner-" + i);
     const spaceEl = document.getElementById("space-" + i);
     if (!tokenEl) return;
+    const currentPlayerHere = state.players.some(p => p.id === state.currentPlayerId && p.position === i && !p.bankrupt);
+    spaceEl.classList.toggle("current-turn-space", currentPlayerHere);
     tokenEl.innerHTML = "";
     state.players.forEach((p, idx) => {
       if (p.position === i && !p.bankrupt) {
         const t = document.createElement("div");
         t.className = "token";
-        t.style.background = PLAYER_COLORS[idx % PLAYER_COLORS.length];
+        t.style.background = playerColor(p, idx);
+        t.textContent = String(idx + 1);
+        t.title = `${p.name} at ${space.name}`;
+        t.setAttribute("aria-label", `${p.name} at ${space.name}`);
         tokenEl.appendChild(t);
       }
     });
@@ -223,7 +349,7 @@ function renderGame(state) {
       const ownerPlayer = state.players.find(p => p.id === owned.ownerId);
       const ownerIdx = state.players.indexOf(ownerPlayer);
       ownerEl.textContent = ownerPlayer ? ownerPlayer.name.slice(0, 3) : "";
-      ownerEl.style.background = PLAYER_COLORS[ownerIdx % PLAYER_COLORS.length];
+      ownerEl.style.background = playerColor(ownerPlayer, ownerIdx);
       spaceEl.classList.toggle("house-owned", owned.houses > 0 || owned.hotel);
       if (owned.mortgaged) ownerEl.textContent += " (M)";
     } else {

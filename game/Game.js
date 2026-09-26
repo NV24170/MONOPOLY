@@ -1,4 +1,5 @@
 const { BOARD, RAILROAD_RENT, CHANCE_CARDS, COMMUNITY_CHEST_CARDS } = require("./board");
+const PLAYER_COLORS = ["#c1dd4b", "#f8c845", "#ff8741", "#d84a4c", "#54a3e3", "#5dd8df", "#15aa9a", "#69e153", "#aa7e68", "#db49ab", "#f56e97", "#7851dc"];
 
 function shuffle(arr) {
   const a = [...arr];
@@ -37,6 +38,7 @@ class Game {
     this.players.push({
       id, name, socketId,
       position: 0, cash: 1500, properties: [],
+      color: PLAYER_COLORS[this.players.length % PLAYER_COLORS.length], ready: false,
       inJail: false, jailTurns: 0, doublesCount: 0,
       jailCards: 0, bankrupt: false,
     });
@@ -54,6 +56,19 @@ class Game {
   currentPlayer() { return this.players[this.turnIndex]; }
   activePlayers() { return this.players.filter(p => !p.bankrupt); }
 
+  chooseAppearance(playerId, color) {
+    const player = this.getPlayer(playerId);
+    if (this.started || !player || player.bankrupt) return { error: "Cannot choose an appearance now" };
+    if (!PLAYER_COLORS.includes(color)) return { error: "Invalid player appearance" };
+    if (this.players.some(other => other.id !== playerId && !other.bankrupt && other.color === color)) {
+      return { error: "That appearance is already taken" };
+    }
+    player.color = color;
+    player.ready = true;
+    this.addLog(`${player.name} joined the game.`);
+    return { ok: true };
+  }
+
   addLog(msg) {
     this.log.push({ msg, t: Date.now() });
     if (this.log.length > 200) this.log.shift();
@@ -61,6 +76,7 @@ class Game {
 
   start() {
     if (this.players.length < 2) return { error: "Need at least 2 players" };
+    if (this.players.some(player => !player.ready)) return { error: "Everyone must choose an appearance first" };
     this.started = true;
     this.phase = "preroll";
     this.turnIndex = 0;
@@ -608,6 +624,7 @@ class Game {
       phase: this.phase,
       players: this.players.map(p => ({
         id: p.id, name: p.name, position: p.position, cash: p.cash,
+        color: p.color, ready: p.ready,
         properties: p.properties, inJail: p.inJail, jailTurns: p.jailTurns,
         jailCards: p.jailCards, bankrupt: p.bankrupt,
       })),
