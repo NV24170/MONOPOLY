@@ -4,6 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>CCP Monopoly</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -41,7 +44,7 @@
       <section class="chat panel-block">
         <div class="panel-heading">Chat</div>
         <div id="chatMessages" class="chat-messages"></div>
-        <div class="chat-input-row"><input id="chatInput" placeholder="Say something..." aria-label="Chat message"><button id="sendChatBtn" aria-label="Send message">➤</button></div>
+        <div class="chat-input-row"><input id="chatInput" maxlength="250" placeholder="Say something..." aria-label="Chat message"><button id="sendChatBtn" aria-label="Send message">➤</button></div>
       </section>
     </aside>
 
@@ -114,10 +117,11 @@
         <label class="rule-toggle"><input type="checkbox" id="roomRuleAuction" checked> Auction on decline</label>
         <label class="rule-toggle"><input type="checkbox" id="roomRuleVacation"> Vacation cash</label>
         <label class="rule-toggle"><input type="checkbox" id="roomRuleDoubleRent" checked> Double rent on full sets</label>
+        <label class="rule-toggle"><input type="checkbox" id="roomRuleRentFree"> Jailed owners collect no rent</label>
       </div>
       <div class="panel-block rules-summary"><div class="panel-heading">Gameplay rules</div><div id="currentRuleList"></div></div>
       <div id="log" class="log panel-block"></div>
-    </div>
+    </aside>
   </div>
 </div>
 

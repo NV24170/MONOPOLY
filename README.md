@@ -35,12 +35,11 @@ Then open http://localhost:3000 in multiple tabs to test with several players.
 - Chance & Community Chest (all 32 official cards)
 - Bankruptcy (to a player or to the bank) and win detection
 - Player-to-player trade proposals with cash and property offers, recipient acceptance/rejection, cancellation, and server-side validation
-- Toggleable rules: auction-on-decline, vacation cash (Free Parking pot), x2 rent on unimproved monopolies
+- Toggleable rules: auction-on-decline, vacation cash (Free Parking pot), x2 rent on unimproved monopolies, rent-free while in jail
 
 ## Known simplifications / next steps
 - No reconnect/resume-session handling — a page refresh drops you from the room (add player tokens + localStorage session id to fix)
 - No spectator mode or room persistence across server restarts (in-memory only — fine for a single Render instance, but a restart clears active games)
-- Selling a hotel currently converts it straight to 4 houses rather than enforcing even sell-down across the group first
 
 ## Game Link
 https://monopoly-app-zel6.onrender.com

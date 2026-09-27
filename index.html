@@ -341,7 +341,7 @@
         const index = Number(key); const space = spaces[index]; const houses = buildCount(index); const mortgaged = !!state.mortgaged[index];
         let action = "";
         if (space.type === "property" && !mortgaged) {
-          const members = groupProperties(space.group); const even = members.every((member) => buildCount(member) >= houses);
+          const members = groupProperties(space.group); const levels = members.map(buildCount); const minimum = Math.min(...levels); const maximum = Math.max(...levels); const even = houses === minimum && maximum - minimum <= 1;
           if (hasMonopoly(state.turn, space.group) && !members.some((member) => state.mortgaged[member]) && houses < 5 && even) action = `<button class="mini-button" data-build="${index}" ${player.cash < groups[space.group].build || (houses === 4 && state.hotels < 1) || (houses < 4 && state.houses < 1) ? "disabled" : ""}>+ Build</button>`;
         }
         if (space.type === "property" && houses === 0 && !mortgaged) {
@@ -400,7 +400,7 @@
       resolveSpace(next, isDouble);
     }
     function moveTo(destination, collectGo = true) {
-      const player = active(); if (collectGo && destination < player.position) collect(player, 200, "passed GO"); player.position = destination; resolveSpace(destination, false);
+      const player = active(); if (collectGo && (destination < player.position || destination === 0)) collect(player, 200, "passed GO"); player.position = destination; resolveSpace(destination, false);
     }
     function resolveSpace(index, isDouble) {
       const player = active(); const space = spaces[index]; state.pending = null;
@@ -551,7 +551,8 @@
       const space = spaces[index]; const members = groupProperties(space.group); const current = buildCount(index); const cost = groups[space.group].build;
       if (!hasMonopoly(state.turn, space.group) || active().cash < cost || current >= 5) return;
       if (members.some((member) => state.mortgaged[member])) return;
-      if (!members.every((member) => buildCount(member) >= current) || (current === 4 ? state.hotels < 1 : state.houses < 1)) return;
+      const levels = members.map(buildCount); const minimum = Math.min(...levels); const maximum = Math.max(...levels);
+      if (current !== minimum || maximum - minimum > 1 || (current === 4 ? state.hotels < 1 : state.houses < 1)) return;
       active().cash -= cost;
       if (current === 4) { state.hotels--; state.houses += 4; state.housesOn[index] = 5; }
       else { state.houses--; state.housesOn[index] = current + 1; }
@@ -573,13 +574,16 @@
       if (!state.players.length || state.gameOver || state.phase === "auction") return;
       const from = state.turn; const targets = living().map((player, index) => ({ player, index })).filter(({ index }) => index !== from);
       if (!targets.length) return;
-      const available = (playerIndex) => Object.keys(state.owners).filter((key) => Number(state.owners[key]) === playerIndex && !buildCount(Number(key))).map((key) => Number(key));
+      const available = (playerIndex) => Object.keys(state.owners).filter((key) => {
+        const index = Number(key); const group = spaces[index].group;
+        return Number(state.owners[key]) === playerIndex && !buildCount(index) && (!group || groupProperties(group).every((member) => !buildCount(member)));
+      }).map((key) => Number(key));
       openModal(`<h2>Propose a trade</h2><p class="modal-copy">Choose deeds, cash, and a jail-free card for each side. Only the other player can accept.</p><label class="form-field">Trade with<select id="trade-target">${targets.map(({ player, index }) => `<option value="${index}">${player.name}</option>`).join("")}</select></label><div class="trade-offer" style="margin:15px 0"><div class="trade-side"><h3>${state.players[from].name} offers</h3><input class="trade-cash" id="trade-cash-out" type="number" min="0" max="${state.players[from].cash}" placeholder="Cash"><div id="trade-out-properties"></div><div id="trade-out-card"></div></div><div class="trade-side"><h3>In return</h3><input class="trade-cash" id="trade-cash-in" type="number" min="0" placeholder="Cash"><div id="trade-in-properties"></div><div id="trade-in-card"></div></div></div><div class="button-row"><button class="primary" id="trade-propose">Propose</button><button class="secondary" id="trade-cancel">Cancel</button></div>`);
       const redrawTradeOptions = () => { const target = Number($("#trade-target").value); $("#trade-out-properties").innerHTML = available(from).map((index) => `<label class="trade-check"><input type="checkbox" value="${index}">${spaces[index].name}</label>`).join("") || `<small style="color:var(--muted)">No available deeds</small>`; $("#trade-in-properties").innerHTML = available(target).map((index) => `<label class="trade-check"><input type="checkbox" value="${index}">${spaces[index].name}</label>`).join("") || `<small style="color:var(--muted)">No available deeds</small>`; $("#trade-out-card").innerHTML = state.players[from].jailCards ? `<label class="trade-check"><input id="trade-card-out" type="checkbox">Get Out of Jail Free</label>` : ""; $("#trade-in-card").innerHTML = state.players[target].jailCards ? `<label class="trade-check"><input id="trade-card-in" type="checkbox">Get Out of Jail Free</label>` : ""; };
       redrawTradeOptions(); $("#trade-target").onchange = redrawTradeOptions; $("#trade-cancel").onclick = closeModal;
       $("#trade-propose").onclick = () => {
         const target = Number($("#trade-target").value); const cashOut = Number($("#trade-cash-out").value || 0); const cashIn = Number($("#trade-cash-in").value || 0);
-        if (cashOut < 0 || cashIn < 0 || cashOut > state.players[from].cash || cashIn > state.players[target].cash) return toast("One of those cash amounts is not available.");
+        if (!Number.isSafeInteger(cashOut) || !Number.isSafeInteger(cashIn) || cashOut < 0 || cashIn < 0 || cashOut > state.players[from].cash || cashIn > state.players[target].cash) return toast("Cash amounts must be whole dollars available to each player.");
         const out = [...document.querySelectorAll("#trade-out-properties input:checked")].map((input) => Number(input.value)); const incoming = [...document.querySelectorAll("#trade-in-properties input:checked")].map((input) => Number(input.value));
         const cardOut = !!$("#trade-card-out")?.checked; const cardIn = !!$("#trade-card-in")?.checked;
         closeModal(); offerTrade({ from, target, cashOut, cashIn, out, incoming, cardOut, cardIn });
@@ -618,7 +622,13 @@
     }
     function botManage() {
       const player = active();
-      Object.keys(state.owners).map(Number).filter((index) => owns(state.turn, index)).forEach((index) => { const space = spaces[index]; if (space.type !== "property" || !hasMonopoly(state.turn, space.group)) return; const group = groupProperties(space.group); const min = Math.min(...group.map(buildCount)); const target = group.find((member) => buildCount(member) === min); const cost = groups[space.group].build; if (player.cash > cost + 250 && state.houses > 0 && buildCount(target) < 4) build(target); });
+      Object.keys(state.owners).map(Number).filter((index) => owns(state.turn, index)).forEach((index) => {
+        const space = spaces[index];
+        if (space.type !== "property" || !hasMonopoly(state.turn, space.group)) return;
+        const group = groupProperties(space.group); const min = Math.min(...group.map(buildCount)); const target = group.find((member) => buildCount(member) === min); const cost = groups[space.group].build;
+        const stockAvailable = buildCount(target) === 4 ? state.hotels > 0 : state.houses > 0;
+        if (player.cash > cost + 250 && stockAvailable && buildCount(target) < 5) build(target);
+      });
     }
     $("#settings-button").onclick = showSettings; $("#new-game-button").onclick = showSetup; $("#trade-button").onclick = showTrade;
     buildBoard(); render(); showSetup();

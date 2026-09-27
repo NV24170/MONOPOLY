@@ -2,7 +2,6 @@ const path = require("path");
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
-const { v4: uuidv4 } = require("uuid");
 const Game = require("./game/Game");
 const { BOARD } = require("./game/board");
 
@@ -30,145 +29,198 @@ function broadcast(roomId) {
 io.on("connection", (socket) => {
   let currentRoomId = null;
   let playerId = null;
+  let lastChatMessageAt = 0;
 
-  socket.on("join_room", ({ roomId, playerName }, cb) => {
-    roomId = (roomId || "default").trim().toLowerCase();
+  function getCurrentGame(cb) {
+    const game = rooms.get(currentRoomId);
+    if (!game && typeof cb === "function") cb({ error: "Join a room first" });
+    return game;
+  }
+
+  socket.on("join_room", (payload, cb) => {
+    if (currentRoomId) {
+      if (typeof cb === "function") cb({ error: "Already joined a room" });
+      return;
+    }
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      if (typeof cb === "function") cb({ error: "Room details are invalid" });
+      return;
+    }
+    const roomId = (typeof payload.roomId === "string" ? payload.roomId : "default").trim().toLowerCase() || "default";
+    if (roomId.length > 20) {
+      if (typeof cb === "function") cb({ error: "Room codes must be 20 characters or fewer" });
+      return;
+    }
+    const playerName = typeof payload.playerName === "string"
+      ? payload.playerName.replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 16) || "Player"
+      : "Player";
     const game = getOrCreateRoom(roomId);
-    playerId = socket.id;
+    const nextPlayerId = socket.id;
+    const result = game.addPlayer(nextPlayerId, playerName, socket.id);
+    if (result.error) {
+      if (typeof cb === "function") cb(result);
+      return;
+    }
+    playerId = nextPlayerId;
     currentRoomId = roomId;
-    const result = game.addPlayer(playerId, playerName || "Player", socket.id);
     socket.join(roomId);
-    if (cb) cb({ ...result, playerId, roomId });
+    if (typeof cb === "function") cb({ ...result, playerId, roomId });
     broadcast(roomId);
   });
 
-  socket.on("choose_appearance", ({ color }, cb) => {
-    const game = rooms.get(currentRoomId);
-    const result = game ? game.chooseAppearance(playerId, color) : { error: "Join a room first" };
-    if (cb) cb(result);
+  socket.on("choose_appearance", (payload, cb) => {
+    const game = getCurrentGame(cb);
+    if (!game) return;
+    const result = game.chooseAppearance(playerId, payload?.color);
+    if (typeof cb === "function") cb(result);
     broadcast(currentRoomId);
   });
 
   socket.on("start_game", (_, cb) => {
-    const game = rooms.get(currentRoomId);
+    const game = getCurrentGame(cb);
     if (!game) return;
     const result = game.start();
-    if (cb) cb(result);
+    if (typeof cb === "function") cb(result);
     broadcast(currentRoomId);
   });
 
   socket.on("roll_dice", (_, cb) => {
-    const game = rooms.get(currentRoomId);
+    const game = getCurrentGame(cb);
     if (!game) return;
     const result = game.rollDice(playerId);
-    if (cb) cb(result);
+    if (typeof cb === "function") cb(result);
     broadcast(currentRoomId);
   });
 
   socket.on("buy_property", (_, cb) => {
-    const game = rooms.get(currentRoomId);
+    const game = getCurrentGame(cb);
+    if (!game) return;
     const result = game.buyProperty(playerId);
-    if (cb) cb(result);
+    if (typeof cb === "function") cb(result);
     broadcast(currentRoomId);
   });
 
   socket.on("decline_buy", (_, cb) => {
-    const game = rooms.get(currentRoomId);
+    const game = getCurrentGame(cb);
+    if (!game) return;
     const result = game.declineBuy(playerId);
-    if (cb) cb(result);
+    if (typeof cb === "function") cb(result);
     broadcast(currentRoomId);
   });
 
-  socket.on("auction_bid", ({ amount }, cb) => {
-    const game = rooms.get(currentRoomId);
-    const result = game.auctionBid(playerId, amount);
-    if (cb) cb(result);
+  socket.on("auction_bid", (payload, cb) => {
+    const game = getCurrentGame(cb);
+    if (!game) return;
+    const result = game.auctionBid(playerId, payload?.amount);
+    if (typeof cb === "function") cb(result);
     broadcast(currentRoomId);
   });
 
   socket.on("auction_pass", (_, cb) => {
-    const game = rooms.get(currentRoomId);
+    const game = getCurrentGame(cb);
+    if (!game) return;
     const result = game.auctionPass(playerId);
-    if (cb) cb(result);
+    if (typeof cb === "function") cb(result);
     broadcast(currentRoomId);
   });
 
-  socket.on("build_house", ({ spaceId }, cb) => {
-    const game = rooms.get(currentRoomId);
-    const result = game.buildHouse(playerId, spaceId);
-    if (cb) cb(result);
+  socket.on("build_house", (payload, cb) => {
+    const game = getCurrentGame(cb);
+    if (!game) return;
+    const result = game.buildHouse(playerId, payload?.spaceId);
+    if (typeof cb === "function") cb(result);
     broadcast(currentRoomId);
   });
 
-  socket.on("sell_house", ({ spaceId }, cb) => {
-    const game = rooms.get(currentRoomId);
-    const result = game.sellHouse(playerId, spaceId);
-    if (cb) cb(result);
+  socket.on("sell_house", (payload, cb) => {
+    const game = getCurrentGame(cb);
+    if (!game) return;
+    const result = game.sellHouse(playerId, payload?.spaceId);
+    if (typeof cb === "function") cb(result);
     broadcast(currentRoomId);
   });
 
-  socket.on("mortgage_property", ({ spaceId }, cb) => {
-    const game = rooms.get(currentRoomId);
-    const result = game.mortgageProperty(playerId, spaceId);
-    if (cb) cb(result);
+  socket.on("mortgage_property", (payload, cb) => {
+    const game = getCurrentGame(cb);
+    if (!game) return;
+    const result = game.mortgageProperty(playerId, payload?.spaceId);
+    if (typeof cb === "function") cb(result);
     broadcast(currentRoomId);
   });
 
-  socket.on("unmortgage_property", ({ spaceId }, cb) => {
-    const game = rooms.get(currentRoomId);
-    const result = game.unmortgageProperty(playerId, spaceId);
-    if (cb) cb(result);
+  socket.on("unmortgage_property", (payload, cb) => {
+    const game = getCurrentGame(cb);
+    if (!game) return;
+    const result = game.unmortgageProperty(playerId, payload?.spaceId);
+    if (typeof cb === "function") cb(result);
     broadcast(currentRoomId);
   });
 
-  socket.on("propose_trade", ({ toId, offer }, cb) => {
-    const game = rooms.get(currentRoomId);
-    const result = game ? game.proposeTrade(playerId, toId, offer) : { error: "Join a room first" };
-    if (cb) cb(result);
+  socket.on("propose_trade", (payload, cb) => {
+    const game = getCurrentGame(cb);
+    if (!game) return;
+    const result = game.proposeTrade(playerId, payload?.toId, payload?.offer);
+    if (typeof cb === "function") cb(result);
     broadcast(currentRoomId);
   });
 
-  socket.on("respond_trade", ({ accept }, cb) => {
-    const game = rooms.get(currentRoomId);
-    const result = game ? game.respondTrade(playerId, !!accept) : { error: "Join a room first" };
-    if (cb) cb(result);
+  socket.on("respond_trade", (payload, cb) => {
+    const game = getCurrentGame(cb);
+    if (!game) return;
+    const result = game.respondTrade(playerId, !!payload?.accept);
+    if (typeof cb === "function") cb(result);
     broadcast(currentRoomId);
   });
 
   socket.on("cancel_trade", (_, cb) => {
-    const game = rooms.get(currentRoomId);
-    const result = game ? game.cancelTrade(playerId) : { error: "Join a room first" };
-    if (cb) cb(result);
+    const game = getCurrentGame(cb);
+    if (!game) return;
+    const result = game.cancelTrade(playerId);
+    if (typeof cb === "function") cb(result);
     broadcast(currentRoomId);
   });
 
   socket.on("pay_jail_fine", (_, cb) => {
-    const game = rooms.get(currentRoomId);
+    const game = getCurrentGame(cb);
+    if (!game) return;
     const result = game.payJailFine(playerId);
-    if (cb) cb(result);
+    if (typeof cb === "function") cb(result);
     broadcast(currentRoomId);
   });
 
   socket.on("use_jail_card", (_, cb) => {
-    const game = rooms.get(currentRoomId);
+    const game = getCurrentGame(cb);
+    if (!game) return;
     const result = game.useJailCard(playerId);
-    if (cb) cb(result);
+    if (typeof cb === "function") cb(result);
     broadcast(currentRoomId);
   });
 
   socket.on("end_turn", (_, cb) => {
-    const game = rooms.get(currentRoomId);
+    const game = getCurrentGame(cb);
+    if (!game) return;
     const result = game.endTurn(playerId);
-    if (cb) cb(result);
+    if (typeof cb === "function") cb(result);
     broadcast(currentRoomId);
   });
 
   socket.on("update_rules", (rules, cb) => {
-    const game = rooms.get(currentRoomId);
-    if (game && !game.started) {
-      game.rules = { ...game.rules, ...rules };
+    const game = getCurrentGame(cb);
+    if (!game) return;
+    let result = { ok: true };
+    if (game.started) {
+      result = { error: "Rules cannot be changed after the game starts" };
+    } else if (!rules || typeof rules !== "object" || Array.isArray(rules)) {
+      result = { error: "Rules are invalid" };
+    } else {
+      const allowedRules = ["auctionOnDecline", "vacationCash", "doubleRentOnMonopoly", "rentFreeInJail"];
+      const updates = {};
+      for (const key of allowedRules) {
+        if (key in rules && typeof rules[key] === "boolean") updates[key] = rules[key];
+      }
+      game.rules = { ...game.rules, ...updates };
     }
-    if (cb) cb({ ok: true });
+    if (typeof cb === "function") cb(result);
     broadcast(currentRoomId);
   });
 
@@ -186,11 +238,17 @@ io.on("connection", (socket) => {
     if (cb) cb({ ok: true });
   });
 
-  socket.on("chat_message", ({ text }) => {
+  socket.on("chat_message", (payload) => {
     const game = rooms.get(currentRoomId);
-    if (!game) return;
+    if (!game || typeof payload?.text !== "string") return;
+    const text = payload.text.trim().slice(0, 250);
+    if (!text) return;
+    const now = Date.now();
+    if (now - lastChatMessageAt < 250) return;
+    lastChatMessageAt = now;
     const player = game.getPlayer(playerId);
-    io.to(currentRoomId).emit("chat_message", { name: player ? player.name : "?", text });
+    if (!player || player.bankrupt) return;
+    io.to(currentRoomId).emit("chat_message", { name: player.name, text });
   });
 
   socket.on("disconnect", () => {

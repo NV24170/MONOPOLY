@@ -25,7 +25,6 @@ class Game {
     this.rollSequence = 0;
     this.pendingAuction = null; // { spaceId, highestBid, highestBidder, order, currentBidderIdx, passed:Set }
     this.pendingTrade = null;
-    this.pendingTrade = null;
     this.freeParkingPot = 0;
     this.rules = {
       auctionOnDecline: true,
@@ -51,12 +50,18 @@ class Game {
 
   removePlayer(id) {
     const p = this.getPlayer(id);
-    if (p) p.bankrupt = true; // simplest: treat disconnect as forfeit if game running
+    if (!p || p.bankrupt) return;
     if (this.pendingTrade && [this.pendingTrade.fromId, this.pendingTrade.toId].includes(id)) {
       this.pendingTrade = null;
       this.addLog("A pending trade was cancelled because a player left.");
     }
-    this.players = this.started ? this.players : this.players.filter(pl => pl.id !== id);
+    if (!p) return;
+    if (this.started) {
+      this.removeAuctionPlayer(id);
+      this.declareBankruptcy(p, null);
+    } else {
+      this.players = this.players.filter(pl => pl.id !== id);
+    }
   }
 
   getPlayer(id) { return this.players.find(p => p.id === id); }
@@ -82,6 +87,7 @@ class Game {
   }
 
   start() {
+    if (this.started) return { error: "Game already started" };
     if (this.players.length < 2) return { error: "Need at least 2 players" };
     if (this.players.some(player => !player.ready)) return { error: "Everyone must choose an appearance first" };
     this.started = true;
@@ -155,6 +161,7 @@ class Game {
   payJailFine(playerId) {
     const player = this.currentPlayer();
     if (!player || player.id !== playerId || !player.inJail) return { error: "Cannot pay fine now" };
+    if (player.cash < 50) return { error: "Not enough cash to pay the fine" };
     player.cash -= 50;
     player.inJail = false;
     player.jailTurns = 0;
@@ -214,9 +221,15 @@ class Game {
 
       case "chance":
       case "community_chest": {
+        const turnIndex = this.turnIndex;
         const card = this.drawCard(space.type);
         const outcome = this.applyCard(player, card);
-        this.phase = "postroll";
+        if (outcome.type === "goto_jail" && this.turnIndex === turnIndex) {
+          this.phase = "preroll";
+          this.endTurn();
+        } else if (this.turnIndex === turnIndex && this.phase !== "awaiting_buy" && this.phase !== "gameover") {
+          this.phase = "postroll";
+        }
         return { space, event: "card", card, outcome };
       }
 
@@ -270,18 +283,21 @@ class Game {
   }
 
   calculateRent(space, owned, lastRoll) {
+    const ownerPlayer = this.getPlayer(owned.ownerId);
+    if (this.rules.rentFreeInJail && ownerPlayer?.inJail) return 0;
     if (space.type === "railroad") {
       const owner = this.getPlayer(owned.ownerId);
-      const count = owner.properties.filter(id => BOARD[id].type === "railroad" && !this.ownership[id].mortgaged).length;
+      const count = owner.properties.filter(id => BOARD[id].type === "railroad").length;
       return RAILROAD_RENT[count - 1] || RAILROAD_RENT[0];
     }
     if (space.type === "utility") {
       const owner = this.getPlayer(owned.ownerId);
-      const count = owner.properties.filter(id => BOARD[id].type === "utility" && !this.ownership[id].mortgaged).length;
+      const count = owner.properties.filter(id => BOARD[id].type === "utility").length;
       const roll = (lastRoll ? lastRoll[0] + lastRoll[1] : 7);
       return count >= 2 ? roll * 10 : roll * 4;
     }
     // property
+    if (owned.hotel) return space.rent[5];
     const houses = owned.houses;
     if (houses > 0) return space.rent[houses];
     // base rent; double if owner has full color group and 0 houses
@@ -309,14 +325,21 @@ class Game {
         this.checkBankruptOnDebt(player, card.amount, null);
         return { type: "pay", amount: card.amount };
       case "collect_each":
-        this.activePlayers().forEach(p => {
-          if (p.id !== player.id) { p.cash -= card.amount; player.cash += card.amount; }
-        });
+        for (const other of this.activePlayers()) {
+          if (other.id === player.id) continue;
+          other.cash -= card.amount;
+          player.cash += card.amount;
+          this.checkBankruptOnDebt(other, card.amount, player);
+        }
         return { type: "collect_each", amount: card.amount };
       case "pay_each":
-        this.activePlayers().forEach(p => {
-          if (p.id !== player.id) { p.cash += card.amount; player.cash -= card.amount; }
-        });
+        for (const other of this.activePlayers()) {
+          if (other.id === player.id) continue;
+          player.cash -= card.amount;
+          other.cash += card.amount;
+          this.checkBankruptOnDebt(player, card.amount, other);
+          if (player.bankrupt) break;
+        }
         return { type: "pay_each", amount: card.amount };
       case "jail_free":
         player.jailCards++;
@@ -327,7 +350,7 @@ class Game {
       case "goto": {
         const prev = player.position;
         player.position = card.target;
-        if (card.collectGo && card.target < prev) player.cash += 200;
+        if (card.collectGo && (card.target < prev || card.target === 0)) player.cash += 200;
         const landing = this.resolveLanding(player);
         return { type: "goto", target: card.target, landing };
       }
@@ -343,7 +366,9 @@ class Game {
         const owned = this.ownership[target];
         if (owned && owned.ownerId !== player.id && !owned.mortgaged) {
           const roll = this.lastRoll ? this.lastRoll[0] + this.lastRoll[1] : 7;
-          const rent = roll * card.multiplier;
+          const rent = card.spaceType === "utility"
+            ? roll * card.multiplier
+            : this.calculateRent(space, owned, this.lastRoll) * card.multiplier;
           const owner = this.getPlayer(owned.ownerId);
           player.cash -= rent;
           owner.cash += rent;
@@ -418,7 +443,7 @@ class Game {
     const bidderId = a.order[a.currentBidderIdx];
     if (bidderId !== playerId) return { error: "Not your turn to bid" };
     const player = this.getPlayer(playerId);
-    if (amount <= a.highestBid || amount > player.cash) return { error: "Invalid bid" };
+    if (!Number.isSafeInteger(amount) || amount <= a.highestBid || amount > player.cash) return { error: "Invalid bid" };
     a.highestBid = amount;
     a.highestBidder = playerId;
     this.advanceAuction();
@@ -438,13 +463,43 @@ class Game {
   advanceAuction() {
     const a = this.pendingAuction;
     const remaining = a.order.filter(id => !a.passed.has(id));
-    if (remaining.length <= 1) {
+    if (remaining.length === 0 || (remaining.length === 1 && a.highestBidder)) {
       this.finishAuction();
+      return;
+    }
+    if (remaining.length === 1) {
+      a.currentBidderIdx = a.order.indexOf(remaining[0]);
       return;
     }
     do {
       a.currentBidderIdx = (a.currentBidderIdx + 1) % a.order.length;
     } while (a.passed.has(a.order[a.currentBidderIdx]));
+  }
+
+  removeAuctionPlayer(playerId) {
+    const auction = this.pendingAuction;
+    if (!auction || !auction.order.includes(playerId)) return;
+    const removedIndex = auction.order.indexOf(playerId);
+    const wasCurrentBidder = auction.order[auction.currentBidderIdx] === playerId;
+    auction.passed.add(playerId);
+    if (auction.highestBidder === playerId) {
+      auction.highestBid = 0;
+      auction.highestBidder = null;
+    }
+    const remaining = auction.order.filter(id => !auction.passed.has(id));
+    if (remaining.length === 0 || (remaining.length === 1 && auction.highestBidder)) {
+      this.finishAuction();
+      return;
+    }
+    if (wasCurrentBidder && remaining.length) {
+      for (let offset = 1; offset <= auction.order.length; offset++) {
+        const nextIndex = (removedIndex + offset) % auction.order.length;
+        if (!auction.passed.has(auction.order[nextIndex])) {
+          auction.currentBidderIdx = nextIndex;
+          break;
+        }
+      }
+    }
   }
 
   finishAuction() {
@@ -468,15 +523,16 @@ class Game {
     const player = this.getPlayer(playerId);
     const space = BOARD[spaceId];
     const owned = this.ownership[spaceId];
+    if (!player || !space || space.type !== "property") return { error: "Can only build on properties" };
     if (!owned || owned.ownerId !== playerId) return { error: "You don't own this" };
-    if (space.type !== "property") return { error: "Can only build on properties" };
     if (owned.mortgaged) return { error: "Property is mortgaged" };
     const groupSpaces = BOARD.filter(s => s.group === space.group);
     const ownsAll = groupSpaces.every(s => this.ownership[s.id] && this.ownership[s.id].ownerId === playerId);
     if (!ownsAll) return { error: "You need the full color group" };
     if (owned.hotel) return { error: "Already has a hotel" };
-    const minHouses = Math.min(...groupSpaces.map(s => this.ownership[s.id].houses));
-    if (owned.houses > minHouses) return { error: "Must build evenly across the group" };
+    const buildingLevel = property => property.hotel ? 5 : property.houses;
+    const minHouses = Math.min(...groupSpaces.map(s => buildingLevel(this.ownership[s.id])));
+    if (buildingLevel(owned) > minHouses) return { error: "Must build evenly across the group" };
     if (player.cash < space.houseCost) return { error: "Not enough cash" };
     player.cash -= space.houseCost;
     if (owned.houses === 4) {
@@ -494,17 +550,23 @@ class Game {
     const player = this.getPlayer(playerId);
     const space = BOARD[spaceId];
     const owned = this.ownership[spaceId];
+    if (!player || !space || space.type !== "property") return { error: "Can only sell buildings on properties" };
     if (!owned || owned.ownerId !== playerId) return { error: "You don't own this" };
     const groupSpaces = BOARD.filter(s => s.group === space.group);
     if (owned.hotel) {
-      const maxHouses = Math.max(...groupSpaces.map(s => this.ownership[s.id].houses));
-      // must sell hotel evenly too (simplified: allow direct)
+      const levelsAfterSale = groupSpaces.map(s => s.id === spaceId ? 4 : this.ownership[s.id].hotel ? 5 : this.ownership[s.id].houses);
+      if (Math.max(...levelsAfterSale) - Math.min(...levelsAfterSale) > 1) return { error: "Must sell evenly across the group" };
       owned.hotel = false;
       owned.houses = 4;
+      player.cash += Math.floor(space.houseCost / 2);
+      this.addLog(`${player.name} sold the hotel on ${space.name}.`);
+      return { ok: true };
     }
     if (owned.houses === 0) return { error: "No buildings to sell" };
-    const maxOthers = Math.max(...groupSpaces.filter(s => s.id !== spaceId).map(s => this.ownership[s.id].houses));
+    const maxOthers = Math.max(...groupSpaces.filter(s => s.id !== spaceId).map(s => this.ownership[s.id].hotel ? 5 : this.ownership[s.id].houses));
     if (owned.houses < maxOthers) return { error: "Must sell evenly across the group" };
+    const levelsAfterSale = groupSpaces.map(s => s.id === spaceId ? owned.houses - 1 : this.ownership[s.id].hotel ? 5 : this.ownership[s.id].houses);
+    if (Math.max(...levelsAfterSale) - Math.min(...levelsAfterSale) > 1) return { error: "Must sell evenly across the group" };
     owned.houses--;
     player.cash += Math.floor(space.houseCost / 2);
     this.addLog(`${player.name} sold a house on ${space.name}.`);
@@ -515,7 +577,9 @@ class Game {
     const owned = this.ownership[spaceId];
     const space = BOARD[spaceId];
     if (!owned || owned.ownerId !== playerId) return { error: "You don't own this" };
-    if (owned.houses > 0 || owned.hotel) return { error: "Sell buildings first" };
+    if (space.type === "property" && BOARD.some(s => s.group === space.group && (this.ownership[s.id]?.houses > 0 || this.ownership[s.id]?.hotel))) {
+      return { error: "Sell all buildings in the color group first" };
+    }
     if (owned.mortgaged) return { error: "Already mortgaged" };
     owned.mortgaged = true;
     this.getPlayer(playerId).cash += space.mortgage;
@@ -656,20 +720,21 @@ class Game {
     player.cash = 0;
 
     const remaining = this.activePlayers();
-    if (remaining.length === 1) {
+    if (remaining.length <= 1) {
       this.phase = "gameover";
-      this.addLog(`${remaining[0].name} wins the game!`);
+      this.addLog(remaining.length ? `${remaining[0].name} wins the game!` : "The game ended with no remaining players.");
     }
   }
 
   // ---- Turn management ----
   endTurn(playerId) {
+    if (playerId && this.phase !== "postroll") return { error: "Cannot end turn now" };
     if (playerId && (!this.currentPlayer() || this.currentPlayer().id !== playerId)) {
       return { error: "Not your turn" };
     }
     if (this.phase === "gameover") return { ok: true };
     const player = this.currentPlayer();
-    if (player && player.doublesCount > 0 && !player.inJail && this.phase === "postroll") {
+    if (player && !player.bankrupt && player.doublesCount > 0 && !player.inJail && this.phase === "postroll") {
       // rolled doubles (and not sent to jail) -> same player rolls again
       player.doublesCount = player.doublesCount; // keep count for 3-in-a-row tracking
       this.phase = "preroll";

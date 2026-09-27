@@ -119,7 +119,7 @@ document.getElementById("joinBtn").onclick = () => {
     document.getElementById("joinBtn").disabled = true;
     document.getElementById("nameInput").disabled = true;
     document.getElementById("roomInput").disabled = true;
-    history.replaceState(null, "", "?room=" + res.roomId);
+    history.replaceState(null, "", "?room=" + encodeURIComponent(res.roomId));
   });
 };
 
@@ -160,6 +160,7 @@ function roomRules() {
     auctionOnDecline: document.getElementById("roomRuleAuction").checked,
     vacationCash: document.getElementById("roomRuleVacation").checked,
     doubleRentOnMonopoly: document.getElementById("roomRuleDoubleRent").checked,
+    rentFreeInJail: document.getElementById("roomRuleRentFree").checked,
   };
 }
 
@@ -175,7 +176,7 @@ document.getElementById("startBtn").onclick = () => {
   });
 };
 
-["roomRuleAuction", "roomRuleVacation", "roomRuleDoubleRent"].forEach(id => {
+["roomRuleAuction", "roomRuleVacation", "roomRuleDoubleRent", "roomRuleRentFree"].forEach(id => {
   document.getElementById(id).addEventListener("change", () => socket.emit("update_rules", roomRules()));
 });
 
@@ -346,6 +347,7 @@ socket.on("chat_message", ({ name, text }) => {
   const p = document.createElement("div");
   p.textContent = `${name}: ${text}`;
   el.appendChild(p);
+  while (el.children.length > 100) el.firstElementChild.remove();
   el.scrollTop = el.scrollHeight;
 });
 
@@ -377,6 +379,7 @@ socket.on("state", (state) => {
     document.getElementById("roomRuleAuction").checked = !!state.rules.auctionOnDecline;
     document.getElementById("roomRuleVacation").checked = !!state.rules.vacationCash;
     document.getElementById("roomRuleDoubleRent").checked = !!state.rules.doubleRentOnMonopoly;
+    document.getElementById("roomRuleRentFree").checked = !!state.rules.rentFreeInJail;
     syncAppearancePicker(state);
   } else {
     const list = document.getElementById("playerList");
@@ -451,7 +454,23 @@ function renderGame(state) {
     const div = document.createElement("div");
     div.className = "player-card" + (p.id === state.currentPlayerId ? " current" : "");
     const location = BOARD[p.position]?.name || "Unknown space";
-    div.innerHTML = `<span><span class="swatch" style="background:${playerColor(p, idx)}">${idx + 1}</span>${p.name}${p.bankrupt ? " (bankrupt)" : ""}${p.inJail ? " 🔒" : ""}</span><span class="player-location" title="${location}">${location}</span><span>$${p.cash}</span>`;
+    const identity = document.createElement("span");
+    const swatch = document.createElement("span");
+    swatch.className = "swatch";
+    swatch.style.background = playerColor(p, idx);
+    swatch.setAttribute("aria-hidden", "true");
+    swatch.innerHTML = '<i class="googly-eye"></i><i class="googly-eye"></i>';
+    const name = document.createElement("span");
+    name.textContent = `${p.name}${p.bankrupt ? " (bankrupt)" : ""}${p.inJail ? " 🔒" : ""}`;
+    identity.append(swatch, name);
+
+    const locationLabel = document.createElement("span");
+    locationLabel.className = "player-location";
+    locationLabel.title = location;
+    locationLabel.textContent = location;
+    const cash = document.createElement("span");
+    cash.textContent = `$${p.cash}`;
+    div.append(identity, locationLabel, cash);
     playersEl.appendChild(div);
   });
 
@@ -469,7 +488,7 @@ function renderGame(state) {
         const t = document.createElement("div");
         t.className = "token";
         t.style.background = playerColor(p, idx);
-        t.textContent = String(idx + 1);
+        t.innerHTML = '<i class="googly-eye"></i><i class="googly-eye"></i>';
         t.title = `${p.name} at ${space.name}`;
         t.setAttribute("aria-label", `${p.name} at ${space.name}`);
         tokenEl.appendChild(t);
@@ -505,6 +524,10 @@ function renderGame(state) {
 
   // Log
   const logEl = document.getElementById("log");
-  logEl.innerHTML = state.log.map(l => `<div>${l.msg}</div>`).join("");
+  logEl.replaceChildren(...state.log.map(entry => {
+    const message = document.createElement("div");
+    message.textContent = entry.msg;
+    return message;
+  }));
   logEl.scrollTop = logEl.scrollHeight;
 }
