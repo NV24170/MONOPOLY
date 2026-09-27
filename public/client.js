@@ -139,6 +139,14 @@ document.getElementById("copyRoomBtn").onclick = async () => {
   }
 };
 
+document.getElementById("leaveRoomBtn").onclick = () => {
+  if (!confirm("Leave this room? Your player will be removed from the game.")) return;
+  socket.emit("leave_room", {}, () => {
+    socket.disconnect();
+    window.location.href = "/";
+  });
+};
+
 function startGameWithRules(rules) {
   socket.emit("update_rules", rules, () => {
     socket.emit("start_game", {}, (res) => {

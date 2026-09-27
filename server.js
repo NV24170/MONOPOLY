@@ -172,6 +172,20 @@ io.on("connection", (socket) => {
     broadcast(currentRoomId);
   });
 
+  socket.on("leave_room", (_, cb) => {
+    if (currentRoomId && rooms.has(currentRoomId)) {
+      const roomId = currentRoomId;
+      const game = rooms.get(roomId);
+      game.removePlayer(playerId);
+      socket.leave(roomId);
+      currentRoomId = null;
+      playerId = null;
+      broadcast(roomId);
+      if (game.players.length === 0) rooms.delete(roomId);
+    }
+    if (cb) cb({ ok: true });
+  });
+
   socket.on("chat_message", ({ text }) => {
     const game = rooms.get(currentRoomId);
     if (!game) return;

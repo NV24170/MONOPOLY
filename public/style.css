@@ -927,7 +927,20 @@ body { color: var(--ink); background: #100c1b; background-image: radial-gradient
 .game-layout { grid-template-columns: minmax(170px, .68fr) minmax(390px, 1.35fr) minmax(245px, .82fr); gap: 7px; width: min(1500px, 100%); height: 100%; padding: 6px; }
 .room-column { gap: 6px; }
 .room-brand { min-height: 30px; color: #f2edff; font: 700 14px Georgia, serif; }
+.room-brand { display: flex; align-items: center; gap: 7px; }
 .room-brand .room-logo { width: 27px; height: 27px; flex-basis: 27px; }
+.leave-room-button {
+  min-height: 25px;
+  margin-left: auto;
+  padding: 0 8px;
+  border: 1px solid #4a315d;
+  border-radius: 3px;
+  color: #c0a9cf;
+  background: transparent;
+  font: 600 9px "Trebuchet MS", sans-serif;
+  cursor: pointer;
+}
+.leave-room-button:hover { border-color: #a74561; color: #ffb1bd; background: #3b1d35; }
 .room-share, .panel-block, .dice-area, #auctionArea { border-color: #352b50; border-radius: 4px; background: #1a142c; box-shadow: 0 5px 14px #08051044; }
 .room-share { padding: 8px; }
 .panel-heading { margin-bottom: 6px; color: #a79bc3; font-size: 8px; letter-spacing: .8px; }
@@ -1001,6 +1014,11 @@ body { color: var(--ink); background: #100c1b; background-image: radial-gradient
   .table-topline { min-height: 25px; }
   .dice-area { min-height: 42px; padding: 3px; }
   .sidebar .panel-block { padding: 5px; }
-  .room-column { height: 62px; gap: 4px; }
+  .room-column { height: 82px; gap: 4px; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); grid-template-rows: auto minmax(0, 1fr); }
+  .room-brand { display: flex; grid-column: 1 / -1; min-height: 22px; font-size: 11px; }
+  .room-brand .room-logo { width: 20px; height: 20px; flex-basis: 20px; }
+  .leave-room-button { min-height: 22px; padding: 0 6px; font-size: 8px; }
+  .room-share { grid-row: 2; }
+  .chat.panel-block { grid-row: 2; }
   .room-share, .chat.panel-block { padding: 4px; }
 }
