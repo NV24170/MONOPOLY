@@ -130,8 +130,18 @@ document.getElementById("createRoomBtn").onclick = () => {
 
 document.getElementById("copyRoomBtn").onclick = async () => {
   const status = document.getElementById("copyStatus");
+  const url = document.getElementById("shareLink").value;
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: "Join my CCP Monopoly game", url });
+      status.textContent = "Invite shared";
+      return;
+    } catch (error) {
+      if (error.name === "AbortError") return;
+    }
+  }
   try {
-    await navigator.clipboard.writeText(document.getElementById("shareLink").value);
+    await navigator.clipboard.writeText(url);
     status.textContent = "Invite link copied";
   } catch {
     status.textContent = "Copy the invite link from the field above";
