@@ -52,6 +52,18 @@
       <div class="table-topline"><span id="turnBanner" class="turn-banner"></span><span id="roomLabel" class="room-label"></span></div>
       <div class="board-wrap">
         <div id="board" class="board"></div>
+        <div class="dice-area">
+          <div id="diceStage" class="dice-stage" role="img" aria-label="Animated dice">
+            <div id="dice3d" class="dice-canvas"></div>
+          </div>
+          <div id="diceDisplay" class="dice-display" aria-live="polite">Roll to begin</div>
+          <button id="rollBtn">Roll Dice</button>
+          <button id="buyBtn" class="hidden">Buy Property</button>
+          <button id="declineBtn" class="hidden">Decline</button>
+          <button id="endTurnBtn" class="hidden">End Turn</button>
+          <button id="payJailBtn" class="hidden">Pay $50 to leave Jail</button>
+          <button id="jailCardBtn" class="hidden">Use Jail Free Card</button>
+        </div>
         <div id="appearanceOverlay" class="appearance-overlay hidden">
           <div class="appearance-dialog">
             <h2>Select your player appearance</h2>
@@ -73,18 +85,6 @@
             <div id="appearanceError" class="appearance-error" aria-live="polite"></div>
           </div>
         </div>
-      </div>
-      <div class="dice-area">
-        <div id="diceStage" class="dice-stage" role="img" aria-label="Animated dice">
-          <div id="dice3d" class="dice-canvas"></div>
-        </div>
-        <div id="diceDisplay" class="dice-display" aria-live="polite">Roll to begin</div>
-        <button id="rollBtn">Roll Dice</button>
-        <button id="buyBtn" class="hidden">Buy Property</button>
-        <button id="declineBtn" class="hidden">Decline</button>
-        <button id="endTurnBtn" class="hidden">End Turn</button>
-        <button id="payJailBtn" class="hidden">Pay $50 to leave Jail</button>
-        <button id="jailCardBtn" class="hidden">Use Jail Free Card</button>
       </div>
     </main>
 

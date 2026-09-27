@@ -17,8 +17,8 @@ import("./dice3d.js").then(({ createDiceAnimator }) => {
 });
 
 const GROUP_COLORS = {
-  brown: "#955436", lightblue: "#aae0fa", pink: "#d93a96", orange: "#f7941d",
-  red: "#ed1b24", yellow: "#fef200", green: "#1fb25a", blue: "#0072bb",
+  brown: "#a95cff", lightblue: "#27d8ff", pink: "#ff3fb4", orange: "#ff8a32",
+  red: "#ff3e68", yellow: "#f5f342", green: "#42ef88", blue: "#39a7ff",
 };
 
 fetch("/board-data").then(r => r.json()).then(data => {

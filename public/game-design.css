@@ -445,3 +445,141 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* Neon arcade table skin */
+:root {
+  --felt-deep: #090713;
+  --felt: #131025;
+  --felt-raised: #201a3a;
+  --felt-line: #3e3266;
+  --paper: #f5f3ff;
+  --paper-muted: #aaa6c6;
+  --ink: #f5f3ff;
+  --ink-soft: #aaa6c6;
+  --ink-dark: #201c36;
+  --gold: #b25cff;
+  --gold-deep: #8039db;
+  --mint: #23f1d0;
+  --coral: #ff4f7b;
+  --line: #352a59;
+  --shadow: 0 18px 50px #020108b8;
+}
+
+body {
+  background-color: #090713;
+  background-image: radial-gradient(#5e45a31c 1px, transparent 1px), linear-gradient(135deg, #17112d, #080711 58%);
+  background-size: 18px 18px, auto;
+}
+
+.game-layout {
+  grid-template-columns: minmax(210px, .8fr) minmax(520px, 2.4fr) minmax(260px, .95fr);
+  gap: 12px;
+  width: min(1700px, 100%);
+  padding: 12px;
+}
+
+.room-brand { color: #f4efff; font-family: "DM Sans", sans-serif; letter-spacing: .2px; }
+.room-share, .panel-block, #auctionArea {
+  border-color: #332658;
+  border-radius: 3px;
+  background: linear-gradient(155deg, #211a3c, #120f25 76%);
+  box-shadow: 0 8px 28px #02010870;
+}
+.panel-heading { color: #d0a7ff; }
+.share-row input, .chat input, .manage select, #auctionArea input, .trade-dialog select, .trade-dialog input[type="number"] {
+  border-color: #3e2e68;
+  border-radius: 2px;
+  color: #f4efff;
+  background: #0d0a19;
+}
+.share-row button, .dice-area button, #tradeOpenBtn, .manage-buttons button, #auctionArea button, .chat-input-row button, .join-game-button {
+  border-radius: 2px;
+  color: #100b20;
+  background: #b45cff;
+  box-shadow: 0 0 16px #a84eff40;
+}
+.share-row button:hover, .dice-area button:hover:not(:disabled), #tradeOpenBtn:hover, .manage-buttons button:hover:not(:disabled), #auctionArea button:hover, .chat-input-row button:hover, .join-game-button:hover { background: #d19aff; }
+.chat .panel-heading { border-color: #3b2d5c; }
+.chat-messages { color: #d7d0f0; }
+.turn-banner { border-color: #3c2b65; color: #d7b6ff; background: #17102f; }
+.room-label { color: #8d83aa; }
+
+.board-wrap { aspect-ratio: 1; align-items: center; }
+.board {
+  width: min(100%, 720px, calc(100svh - 76px));
+  gap: 3px;
+  padding: 7px;
+  border: 1px solid #25e4e0;
+  border-radius: 2px;
+  background: #13bdbd;
+  box-shadow: 0 0 0 2px #102f52, 0 0 22px #16e0de80, 0 20px 55px #020108b8;
+}
+.space {
+  padding: 4px 3px;
+  border-color: #3e3564;
+  border-radius: 1px;
+  color: #e9e3ff;
+  background: #211b3b;
+}
+.space .name { color: #ebe6ff; }
+.space .price { color: #a79ac9; }
+.space .color-bar { border-bottom-color: #ffffff36; box-shadow: 0 0 8px currentColor; }
+.space .owner-tag { color: #1b1530; background: #efe9ffed; }
+.space.house-owned { box-shadow: inset 0 0 0 2px #23f1d0; }
+.space.current-turn-space { outline-color: #f5f342; box-shadow: 0 0 13px #f5f34299; }
+.center-cell {
+  border-color: #3f3268;
+  color: #e5d9ff;
+  background-color: #0f0b1e;
+  background-image: radial-gradient(#6f52b21a 1px, transparent 1px), linear-gradient(135deg, #17112c, #0c0918);
+  background-size: 13px 13px, auto;
+}
+.center-room .center-logo { filter: drop-shadow(0 0 12px #a959ff); }
+.center-room > span { color: #aaa1c8; }
+
+.dice-area {
+  position: absolute;
+  z-index: 4;
+  top: 18.18%;
+  left: 18.18%;
+  display: flex;
+  width: 63.64%;
+  height: 63.64%;
+  min-height: 0;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 10px;
+  padding: 18px;
+  border: 0;
+  border-radius: 0;
+  background: #09071324;
+  box-shadow: none;
+}
+.dice-stage { width: min(100%, 220px); height: 105px; flex: 0 0 105px; }
+.dice-display { color: #d9d0f8; }
+.dice-area button { min-width: 112px; }
+.dice-area #declineBtn, .manage-buttons #sellHouseBtn, #auctionArea #passBtn { color: #ffe8f0; background: #e62f68; }
+.dice-area #declineBtn:hover:not(:disabled), .manage-buttons #sellHouseBtn:hover:not(:disabled), #auctionArea #passBtn:hover:not(:disabled) { background: #ff5688; }
+
+.sidebar { gap: 8px; }
+.player-card { border-color: #ffffff12; color: #ded8f4; }
+.player-card.current { color: #f5f342; box-shadow: inset 3px 0 #23f1d0; }
+.player-location { color: #8f86aa; }
+.manage h3, #auctionArea h3, .trade-offer-panel h3 { color: #f1ebff; }
+.rule-summary-row { border-color: #ffffff12; color: #b7add1; }
+.rule-state.on { color: #23f1d0; }
+.log { color: #aaa1c8; }
+.log > div { border-color: #ffffff10; }
+.trade-offer-panel { border-color: #69428b; background: linear-gradient(145deg, #3b2051, #211633); }
+
+@media (max-width: 1180px) {
+  .game-layout { grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr); }
+  .board { width: min(100%, 660px, calc(100svh - 120px)); }
+}
+
+@media (max-width: 760px) {
+  .game-layout { grid-template-columns: minmax(0, 1fr); }
+  .board { width: min(100%, calc(100vw - 18px), 620px); }
+  .dice-area { gap: 4px; padding: 8px; }
+  .dice-stage { height: 64px; flex-basis: 64px; }
+}
