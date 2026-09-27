@@ -1003,6 +1003,26 @@ body { color: var(--ink); background: #100c1b; background-image: radial-gradient
 .lobby-box h1 { color: #f1ebfc; }
 .lobby-box .lobby-tagline, .lobby-box > p:not(.error) { color: #a79bb8; }
 .lobby-box input:not([type="checkbox"]) { border-color: #382d50; color: #f1ebfc; background: #130e21; }
+
+.token, .player-card .swatch { position: relative; overflow: hidden; font-size: 0; }
+.token::before, .token::after, .player-card .swatch::before, .player-card .swatch::after {
+  position: absolute;
+  top: 21%;
+  width: 35%;
+  height: 43%;
+  border: 1px solid #fff;
+  border-radius: 50%;
+  content: "";
+  box-shadow: 0 0 1px #17251b;
+}
+.token::before, .player-card .swatch::before {
+  left: 12%;
+  background: radial-gradient(circle at 68% 58%, #17251b 0 25%, #fff 30%);
+}
+.token::after, .player-card .swatch::after {
+  right: 12%;
+  background: radial-gradient(circle at 32% 58%, #17251b 0 25%, #fff 30%);
+}
 .lobby-box button, .join-game-button { background: #7048c7; }
 .lobby-box .secondary-action { border-color: #40335a; color: #ddd6e9; background: #2a2040; }
 .error, .appearance-error { color: #ff96a6; }
