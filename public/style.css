@@ -568,6 +568,326 @@ body { color: var(--ink); background: #130f1b; background-image: radial-gradient
 .trade-side { min-width: 0; padding: 11px; border: 1px solid #3e334f; border-radius: 6px; background: #261f35; }
 .trade-side h3 { margin: 0 0 9px; color: #d2baff; font-size: 12px; }
 .trade-property-list { display: grid; max-height: 190px; gap: 3px; overflow-y: auto; margin-top: 8px; }
+
+/* Compact tabletop room */
+:root {
+  color-scheme: light;
+  --ink: #173a31;
+  --ink-soft: #62786e;
+  --felt: #edf2e9;
+  --felt-dark: #164f3e;
+  --paper: #fffdf6;
+  --panel: #fffdf8;
+  --line: #d5dfd5;
+  --green: #176b50;
+  --green-hover: #10583f;
+  --red: #bd5548;
+  --gold: #d5a943;
+  --shadow: 0 8px 24px #153b2c12;
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+}
+body {
+  color: var(--ink);
+  background-color: var(--felt);
+  background-image: radial-gradient(#285b4712 .8px, transparent .8px), linear-gradient(135deg, #f4f5ec, #e7efe8);
+  background-size: 16px 16px, auto;
+}
+#game { height: 100svh; min-height: 0; overflow: hidden; }
+.game-layout {
+  display: grid;
+  grid-template-columns: minmax(190px, .72fr) minmax(420px, 1.55fr) minmax(260px, .9fr);
+  gap: 12px;
+  width: min(1720px, 100%);
+  height: 100%;
+  min-height: 0;
+  margin: 0 auto;
+  padding: 12px;
+  overflow: hidden;
+  animation: room-in .35s ease-out both;
+}
+.room-column, .table-column, .sidebar { min-width: 0; min-height: 0; }
+.room-column {
+  display: grid;
+  height: 100%;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 10px;
+}
+.room-brand { min-height: 39px; gap: 8px; color: var(--ink); font: 700 17px Georgia, serif; }
+.room-brand .room-logo { width: 34px; height: 34px; flex-basis: 34px; }
+.room-share, .panel-block, .dice-area, #auctionArea {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+.room-share { padding: 10px; }
+.panel-heading { margin-bottom: 8px; color: var(--ink-soft); font-size: 10px; font-weight: 800; text-align: left; text-transform: uppercase; }
+.share-row { grid-template-columns: minmax(0, 1fr) auto; gap: 5px; }
+.share-row input, .chat input, .manage select, #auctionArea input {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--ink);
+  background: #f7f8f2;
+}
+.share-row input { min-height: 32px; padding: 0 7px; font-size: 10px; }
+.share-row button, .chat-input-row button, #tradeOpenBtn, .trade-response-buttons button, .trade-dialog-actions button {
+  min-height: 32px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 4px;
+  color: #fff;
+  background: var(--green);
+  font-size: 10px;
+  font-weight: 700;
+}
+.share-row button:hover, .chat-input-row button:hover, #tradeOpenBtn:hover { background: var(--green-hover); }
+.copy-status { min-height: 12px; margin-top: 4px; color: var(--green); font-size: 9px; }
+.chat.panel-block { display: flex; min-height: 0; flex-direction: column; padding: 10px; }
+.chat .panel-heading { padding-bottom: 7px; border-bottom: 1px solid var(--line); }
+.chat-messages { min-height: 0; flex: 1; margin: 0; color: var(--ink-soft); font-size: 11px; }
+.chat-input-row { display: grid; grid-template-columns: minmax(0, 1fr) 34px; gap: 5px; margin-top: 7px; }
+.chat input { min-height: 33px; padding: 0 8px; font-size: 11px; }
+.chat-input-row button { padding: 0; font-size: 14px; }
+.table-column { display: flex; min-height: 0; flex-direction: column; align-items: center; gap: 7px; }
+.table-topline { display: flex; width: 100%; min-height: 36px; align-items: center; gap: 8px; }
+.turn-banner { flex: 1; padding: 9px 11px; border: 0; border-radius: 5px; color: #fff; background: var(--felt-dark); font-size: 12px; text-align: left; }
+.room-label { color: var(--ink-soft); font-size: 10px; white-space: nowrap; }
+.board-wrap { width: 100%; min-height: 0; flex: 0 1 auto; align-items: center; }
+.board {
+  width: min(100%, 740px, calc(100svh - 175px));
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid #a9c1b0;
+  border-radius: 7px;
+  background: #c8d9c9;
+  box-shadow: 0 10px 28px #173a3120;
+  animation: board-in .4s ease-out both;
+}
+.space { padding: 3px 2px; border-color: #e5e8da; color: #334d40; background: var(--paper); font-size: clamp(6px, .58vw, 8px); }
+.space .name { color: #294438; }
+.space .price { color: #6c8274; }
+.space .owner-tag { color: #253d32; background: #fffdf2ed; }
+.space.current-turn-space { outline-color: #cb4f43; box-shadow: inset 0 0 0 1px #cb4f4366; }
+.space.house-owned { box-shadow: inset 0 0 0 2px #16825c; }
+.center-cell {
+  border-color: #ffffff38;
+  color: #fff8df;
+  background-color: #1e674d;
+  background-image: repeating-linear-gradient(35deg, transparent 0 20px, #ffffff0b 21px 22px);
+  font-family: Georgia, serif;
+  letter-spacing: 0;
+}
+.center-room { gap: 7px; padding: 8px; }
+.center-room .center-logo { width: clamp(50px, 6vw, 78px); height: clamp(50px, 6vw, 78px); }
+.center-room > span { color: #d4e4d6; }
+.center-room button, .join-game-button { min-height: 33px; padding: 0 12px; border: 0; border-radius: 4px; color: #fff; background: var(--red); font-size: 10px; font-weight: 700; }
+.center-room button:hover:not(:disabled), .join-game-button:hover { background: #a94438; }
+.dice-area {
+  display: flex;
+  width: 100%;
+  min-height: 0;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 7px;
+}
+.dice-stage { width: min(100%, 210px); height: 66px; flex: 0 0 100%; margin: -2px auto 0; }
+.dice-display { min-width: 100%; margin: 0; color: var(--ink-soft); font-size: 11px; }
+.dice-area button, .manage-buttons button, #auctionArea button {
+  min-height: 32px;
+  margin: 1px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 4px;
+  color: #fff;
+  background: var(--green);
+  font-size: 10px;
+  font-weight: 700;
+}
+.dice-area #declineBtn, .manage-buttons #sellHouseBtn, #auctionArea #passBtn { background: var(--red); }
+.sidebar {
+  display: grid;
+  height: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: max-content;
+  align-content: start;
+  gap: 8px;
+  overflow-y: auto;
+  padding: 0 2px 2px 0;
+  scrollbar-width: thin;
+  scrollbar-color: #b2c8b8 transparent;
+}
+.sidebar .panel-block { min-width: 0; padding: 9px; }
+.sidebar .players-panel, .sidebar .trade-offer-panel, .sidebar #auctionArea, .sidebar .log { grid-column: 1 / -1; }
+.players-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 7px; }
+.players-panel-head .panel-heading { margin: 0; }
+.players { padding: 3px 0 0; border: 0; background: transparent; box-shadow: none; }
+.player-card { min-height: 32px; grid-template-columns: minmax(65px, 1fr) minmax(60px, 1fr) auto; gap: 5px; border-color: #e9eee6; color: #425d4f; font-size: 10px; }
+.player-card.current { color: var(--green); }
+.player-card > span:last-child { color: var(--ink); }
+.player-card .swatch { width: 16px; height: 16px; flex-basis: 16px; }
+.player-location { color: #75877b; font-size: 9px; }
+.manage { grid-column: 1; }
+.manage h3, #auctionArea h3 { margin: 0 0 7px; color: var(--ink); font: 700 13px Georgia, serif; }
+.manage select { width: 100%; min-height: 31px; margin-bottom: 5px; padding: 0 6px; font-size: 10px; }
+.manage-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+.manage-buttons button { min-height: 29px; padding: 0 5px; font-size: 9px; }
+.room-settings, .rules-summary { grid-column: 2; }
+.room-settings .rule-toggle { justify-content: space-between; min-height: 27px; margin: 0; padding: 4px 0; border-bottom: 1px solid #e9eee6; color: var(--ink-soft); font-size: 9px; }
+.room-settings .rule-toggle input { accent-color: var(--green); }
+.rules-summary .panel-heading { padding-bottom: 5px; border-bottom: 1px solid #e9eee6; }
+.rule-summary-row { padding: 5px 0; border-color: #e9eee6; color: var(--ink-soft); font-size: 9px; }
+.rule-state.on { color: var(--green); }
+.rule-state.off { color: #89958d; }
+.log { min-height: 0; max-height: 104px; overflow-y: auto; color: var(--ink-soft); font-size: 10px; }
+.log > div { padding: 4px 0; border-color: #e9eee6; }
+#auctionArea { padding: 9px; color: var(--ink); }
+#auctionArea p { margin: 6px 0; color: var(--ink-soft); font-size: 10px; }
+#auctionArea input { min-height: 31px; padding: 0 7px; font-size: 11px; }
+#tradeOpenBtn { color: #fff; }
+.trade-offer-panel { background: #fff7e8; }
+.trade-offer-panel h3 { margin: 0 0 5px; color: #8f4d2b; font: 700 13px Georgia, serif; }
+.trade-offer-panel p { margin: 0 0 7px; color: var(--ink-soft); font-size: 10px; }
+.trade-response-buttons { display: flex; flex-wrap: wrap; gap: 5px; }
+.trade-response-buttons button, .trade-dialog-actions button { color: var(--ink); background: #e8eee6; }
+.trade-response-buttons #acceptTradeBtn, .trade-dialog-actions #tradeSendBtn { color: #fff; background: var(--green); }
+.appearance-overlay { background: #183a2c8a; }
+.appearance-dialog { border: 1px solid #d2e2d1; border-radius: 6px; background: #fffdf6; box-shadow: 0 15px 45px #102b2080; }
+.appearance-dialog h2 { color: var(--ink); }
+.appearance-color.selected { border-color: #fff; box-shadow: 0 0 0 3px var(--green), 0 0 15px #176b5066; }
+.appearance-error { color: var(--red); }
+.trade-dialog { border-color: var(--line); border-radius: 7px; color: var(--ink); background: var(--panel); box-shadow: 0 20px 70px #153b2c44; }
+.trade-dialog::backdrop { background: #10251db8; backdrop-filter: blur(3px); }
+.trade-dialog-head .eyebrow { color: var(--green); letter-spacing: 0; }
+.trade-dialog-head h2 { color: var(--ink); }
+.trade-dialog .dialog-close { color: var(--ink-soft); }
+.trade-target-label, .trade-side > label { color: var(--ink-soft); }
+.trade-dialog select, .trade-dialog input[type="number"] { border-color: var(--line); color: var(--ink); background: #f7f8f2; }
+.trade-side { border-color: var(--line); background: #f6f7f0; }
+.trade-side h3 { color: var(--green); }
+.trade-property-list { max-height: 170px; }
+.lobby-box {
+  width: min(410px, 100%);
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  box-shadow: 0 18px 48px #153b2c18;
+  text-align: left;
+}
+.brand-logo { width: 76px; height: 76px; margin: 0 0 12px; filter: drop-shadow(0 5px 12px #17432c24); }
+.lobby-box h1 { color: var(--ink); font: 700 30px Georgia, serif; }
+.lobby-box .lobby-tagline { margin: 5px 0 17px; color: var(--ink-soft); font-size: 12px; }
+.lobby-box input:not([type="checkbox"]) { min-height: 40px; border-color: var(--line); border-radius: 4px; color: var(--ink); background: #f7f8f2; }
+.lobby-box input::placeholder, .chat input::placeholder { color: #829187; }
+.lobby-box input:focus, #auctionArea input:focus, .manage select:focus, .chat input:focus { border-color: var(--green); box-shadow: 0 0 0 3px #176b501c; }
+.lobby-box button { min-height: 38px; border-radius: 4px; background: var(--green); }
+.lobby-box button:hover { background: var(--green-hover); }
+.lobby-box .primary-action { min-height: 43px; margin-top: 9px; font-size: 14px; }
+.lobby-box .secondary-action { border: 1px solid var(--line); color: var(--ink); background: #edf2e9; }
+.lobby-box .secondary-action:hover { background: #e3ebdf; }
+.lobby-box > p:not(.error) { color: var(--ink-soft); }
+.error { color: var(--red); }
+#waitingRoom { border-color: var(--line); }
+#waitingRoom h3 { color: var(--ink); }
+#playerList { color: var(--ink-soft); }
+.rule-toggle { color: var(--ink-soft); }
+.rule-toggle input { accent-color: var(--green); }
+button:disabled { cursor: not-allowed; opacity: .5; }
+
+@media (max-width: 1100px) and (min-width: 721px) {
+  .game-layout { grid-template-columns: minmax(0, 1.35fr) minmax(270px, .85fr); grid-template-rows: minmax(0, 1fr) 132px; gap: 9px; padding: 9px; }
+  .table-column { grid-column: 1; grid-row: 1; }
+  .sidebar { grid-column: 2; grid-row: 1 / span 2; }
+  .room-column { grid-column: 1; grid-row: 2; height: 100%; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); grid-template-rows: auto minmax(0, 1fr); gap: 7px; }
+  .room-brand { display: none; }
+  .room-share { grid-row: 1 / span 2; }
+  .board { width: min(100%, 740px, calc(100svh - 275px)); }
+  .dice-stage { height: 48px; }
+  .sidebar .players-panel { grid-column: 1 / -1; }
+}
+@media (max-width: 720px) {
+  #game { height: 100svh; }
+  .game-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto auto;
+    gap: 6px;
+    padding: max(5px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) max(5px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+  }
+  .table-column { grid-column: 1; grid-row: 1; gap: 4px; }
+  .table-topline { min-height: 29px; }
+  .turn-banner { padding: 7px 9px; font-size: 11px; }
+  .board-wrap { flex: 0 1 auto; }
+  .board { width: min(100%, calc(100vw - 12px), 43svh); gap: 1px; padding: 3px; }
+  .space { padding: 2px 1px; font-size: clamp(5px, 1.5vw, 7px); }
+  .space .color-bar { height: 5px; margin: -2px -1px 2px; }
+  .space .owner-tag { font-size: 5px; }
+  .space .tokens { top: 2px; left: 2px; gap: 1px; }
+  .token { width: 11px; height: 11px; font-size: 6px; }
+  .center-cell { font-size: clamp(13px, 5vw, 22px); }
+  .center-room { gap: 3px; padding: 4px; }
+  .center-room .center-logo { width: 38px; height: 38px; }
+  .center-room > span { font-size: 9px; }
+  .center-room button { min-height: 27px; }
+  .dice-area { gap: 3px; padding: 4px; }
+  .dice-stage { display: none; }
+  .dice-display { min-width: 72px; flex: 0 0 auto; font-size: 10px; }
+  .dice-area button { min-height: 30px; padding: 0 8px; font-size: 9px; }
+  .sidebar {
+    grid-column: 1;
+    grid-row: 2;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
+    grid-auto-rows: max-content;
+    gap: 5px;
+    height: auto;
+    overflow: auto;
+    padding: 0;
+  }
+  .sidebar .panel-block { padding: 6px; }
+  .sidebar .players-panel { grid-column: 1; grid-row: 1 / span 2; }
+  .sidebar .players-panel .panel-heading { font-size: 9px; }
+  .player-card { min-height: 24px; grid-template-columns: minmax(50px, 1fr) minmax(44px, 1fr) auto; gap: 3px; font-size: 9px; }
+  .player-card .swatch { width: 13px; height: 13px; flex-basis: 13px; font-size: 7px; }
+  .player-location { font-size: 8px; }
+  .sidebar .manage { grid-column: 2; grid-row: 1; }
+  .manage h3 { margin-bottom: 4px; font-size: 11px; }
+  .manage select { min-height: 27px; }
+  .manage-buttons button { min-height: 26px; }
+  .sidebar .room-settings, .sidebar .rules-summary { grid-column: 2; }
+  .sidebar .room-settings .rule-toggle { min-height: 21px; padding: 2px 0; font-size: 8px; }
+  .sidebar .room-settings input { width: 13px; height: 13px; }
+  .sidebar .rules-summary .panel-heading { display: none; }
+  .rule-summary-row { padding: 2px 0; font-size: 8px; }
+  .sidebar .log, .sidebar #auctionArea, .sidebar .trade-offer-panel { grid-column: 1 / -1; }
+  .sidebar .log { max-height: 52px; }
+  .room-column {
+    grid-column: 1;
+    grid-row: 3;
+    grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr);
+    grid-template-rows: minmax(0, 1fr);
+    gap: 5px;
+    height: 76px;
+  }
+  .room-brand { display: none; }
+  .room-share, .chat.panel-block { padding: 5px; }
+  .room-share .panel-heading, .chat .panel-heading { margin-bottom: 4px; padding-bottom: 3px; font-size: 8px; }
+  .share-row input, .share-row button, .chat input, .chat-input-row button { min-height: 27px; font-size: 9px; }
+  .copy-status { display: none; }
+  .chat-messages { font-size: 8px; }
+  .chat-input-row { grid-template-columns: minmax(0, 1fr) 27px; gap: 3px; margin-top: 3px; }
+}
+@media (max-width: 380px) {
+  .board { width: min(100%, calc(100vw - 12px), 40svh); }
+  .game-layout { gap: 4px; }
+  .sidebar { gap: 4px; }
+  .sidebar .panel-block { padding: 5px; }
+  .manage-buttons { gap: 2px; }
+  .manage-buttons button { padding: 0 3px; font-size: 8px; }
+  .player-card { grid-template-columns: minmax(45px, 1fr) minmax(39px, 1fr) auto; }
+}
 .trade-property-option { display: flex; min-height: 30px; align-items: center; gap: 7px; padding: 4px; border-radius: 4px; color: #d6cede; font-size: 10px; cursor: pointer; }
 .trade-property-option:hover { background: #ffffff0b; }
 .trade-property-option input { accent-color: #895cf0; }
