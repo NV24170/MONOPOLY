@@ -906,3 +906,101 @@ button:disabled { cursor: not-allowed; opacity: .5; }
   .trade-dialog select, .trade-dialog input[type="number"] { min-height: 44px; font-size: 16px; }
   .trade-property-option input { width: 19px; height: 19px; }
 }
+
+/* Dark compact reference skin */
+:root {
+  color-scheme: dark;
+  --ink: #eeeafa;
+  --ink-soft: #9f98b8;
+  --felt: #130f20;
+  --felt-dark: #302050;
+  --paper: #211936;
+  --panel: #1c1630;
+  --line: #3b3156;
+  --green: #8460e7;
+  --green-hover: #9975f2;
+  --red: #a74561;
+  --shadow: 0 10px 26px #08051066;
+}
+body { color: var(--ink); background: #100c1b; background-image: radial-gradient(ellipse at 50% 45%, #211733 0%, #100c1b 68%); }
+#game { height: 100svh; overflow: hidden; background: linear-gradient(90deg, #171126 0 15%, #100c1b 15% 85%, #171126 85%); }
+.game-layout { grid-template-columns: minmax(170px, .68fr) minmax(390px, 1.35fr) minmax(245px, .82fr); gap: 7px; width: min(1500px, 100%); height: 100%; padding: 6px; }
+.room-column { gap: 6px; }
+.room-brand { min-height: 30px; color: #f2edff; font: 700 14px Georgia, serif; }
+.room-brand .room-logo { width: 27px; height: 27px; flex-basis: 27px; }
+.room-share, .panel-block, .dice-area, #auctionArea { border-color: #352b50; border-radius: 4px; background: #1a142c; box-shadow: 0 5px 14px #08051044; }
+.room-share { padding: 8px; }
+.panel-heading { margin-bottom: 6px; color: #a79bc3; font-size: 8px; letter-spacing: .8px; }
+.share-row input, .chat input, .manage select, #auctionArea input { border-color: #302642; color: #eeeafa; background: #120e20; }
+.share-row input, .chat input { min-height: 27px; font-size: 9px; }
+.share-row button, .chat-input-row button, #tradeOpenBtn, .trade-response-buttons button, .trade-dialog-actions button { min-height: 27px; border-radius: 3px; background: #7048c7; font-size: 9px; }
+.share-row button:hover, .chat-input-row button:hover, #tradeOpenBtn:hover { background: #895fe1; }
+.copy-status { color: #ac91ef; font-size: 8px; }
+.chat.panel-block { padding: 8px; }
+.chat .panel-heading { border-color: #302642; }
+.chat-messages { color: #bbb3ca; font-size: 9px; }
+.chat-input-row { grid-template-columns: minmax(0, 1fr) 27px; gap: 4px; }
+.table-column { gap: 5px; }
+.table-topline { min-height: 29px; }
+.turn-banner { padding: 7px 9px; border: 1px solid #3d2d65; color: #d5c7fa; background: #251a40; font-size: 10px; }
+.room-label { color: #847c9d; font-size: 8px; }
+.board { width: min(100%, 650px, calc(100svh - 115px)); gap: 1px; padding: 3px; border-color: #0b0814; border-radius: 4px; background: #0d0916; box-shadow: 0 12px 28px #07040eaa; }
+.space { padding: 3px 2px; border-color: #352c49; color: #ddd7e9; background: #241b38; font-size: clamp(5px, .54vw, 8px); }
+.space .name { color: #eeeafa; }
+.space .price { color: #a9a0bb; }
+.space .owner-tag { color: #f1eafa; background: #392d4eed; }
+.space.current-turn-space { outline-color: #f0ca6e; box-shadow: inset 0 0 0 1px #f0ca6e66; }
+.space.house-owned { box-shadow: inset 0 0 0 2px #62bd88; }
+.center-cell { border-color: #ffffff12; color: #d6c4ff; background-color: #191227; background-image: repeating-linear-gradient(35deg, transparent 0 18px, #ffffff05 19px 20px); font-family: "Trebuchet MS", sans-serif; }
+.center-room { gap: 5px; padding: 6px; }
+.center-room .center-logo { width: clamp(46px, 6vw, 72px); height: clamp(46px, 6vw, 72px); }
+.center-room > span { color: #9d91b8; font-size: 9px; }
+.center-room button, .join-game-button { min-height: 29px; background: #7048c7; font-size: 9px; }
+.dice-area { min-height: 52px; gap: 3px; padding: 5px; }
+.dice-stage { width: min(100%, 180px); height: 48px; }
+.dice-display { color: #c9c1d8; font-size: 10px; }
+.dice-area button, .manage-buttons button, #auctionArea button { min-height: 28px; padding: 0 8px; border-radius: 3px; background: #7048c7; font-size: 9px; }
+.dice-area #declineBtn, .manage-buttons #sellHouseBtn, #auctionArea #passBtn { background: #713748; }
+.sidebar { gap: 6px; padding-right: 1px; scrollbar-color: #49396c transparent; }
+.sidebar .panel-block { padding: 8px; }
+.player-card { min-height: 28px; grid-template-columns: minmax(60px, 1fr) minmax(55px, 1fr) auto; gap: 4px; border-color: #2b2340; color: #c8c0d5; font-size: 9px; }
+.player-card.current { color: #c8b4ff; }
+.player-card > span:last-child { color: #eeeafa; }
+.player-card .swatch { width: 14px; height: 14px; flex-basis: 14px; }
+.player-location { color: #89819e; font-size: 8px; }
+.manage h3, #auctionArea h3 { color: #eeeafa; font-size: 12px; }
+.manage select { min-height: 27px; font-size: 9px; }
+.manage-buttons { gap: 3px; }
+.manage-buttons button { min-height: 26px; padding: 0 4px; font-size: 8px; }
+.room-settings .rule-toggle, .rule-summary-row { border-color: #2b2340; color: #aaa2b9; font-size: 8px; }
+.rule-state.on { color: #79d39d; }
+.rule-state.off { color: #77708d; }
+.log { max-height: 90px; color: #958da5; font-size: 9px; }
+.log > div { border-color: #2b2340; }
+.trade-offer-panel { border-color: #604779; background: #2a1d3b; }
+.trade-offer-panel h3 { color: #d2b5ff; }
+.trade-offer-panel p { color: #b9aecb; }
+.trade-response-buttons button, .trade-dialog-actions button { color: #eeeafa; background: #302443; }
+.trade-response-buttons #acceptTradeBtn, .trade-dialog-actions #tradeSendBtn { background: #7048c7; }
+.appearance-overlay { background: #0c0815bb; }
+.appearance-dialog, .trade-dialog { border-color: #4c3b6d; background: #1d1630; }
+.appearance-dialog h2, .trade-dialog-head h2 { color: #f1ebfc; }
+.appearance-color.selected { box-shadow: 0 0 0 3px #8b65e6, 0 0 15px #8b65e688; }
+.lobby-box { border-color: #3a2d54; background: #1b152d; box-shadow: 0 18px 48px #08051088; }
+.lobby-box h1 { color: #f1ebfc; }
+.lobby-box .lobby-tagline, .lobby-box > p:not(.error) { color: #a79bb8; }
+.lobby-box input:not([type="checkbox"]) { border-color: #382d50; color: #f1ebfc; background: #130e21; }
+.lobby-box button, .join-game-button { background: #7048c7; }
+.lobby-box .secondary-action { border-color: #40335a; color: #ddd6e9; background: #2a2040; }
+.error, .appearance-error { color: #ff96a6; }
+
+@media (max-width: 720px) {
+  #game { background: #100c1b; }
+  .game-layout { grid-template-rows: minmax(0, 1fr) auto auto; gap: 4px; padding: 4px; }
+  .board { width: min(100%, calc(100vw - 8px), 52svh); }
+  .table-topline { min-height: 25px; }
+  .dice-area { min-height: 42px; padding: 3px; }
+  .sidebar .panel-block { padding: 5px; }
+  .room-column { height: 62px; gap: 4px; }
+  .room-share, .chat.panel-block { padding: 4px; }
+}

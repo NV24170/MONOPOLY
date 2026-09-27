@@ -1,27 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title">
-  <title id="title">CCP Monopoly</title>
+  <title id="title">CCP cloud</title>
   <defs>
-    <radialGradient id="seal" cx="38%" cy="28%" r="76%">
-      <stop offset="0" stop-color="#b84743"/>
-      <stop offset="1" stop-color="#641c2a"/>
-    </radialGradient>
-    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#fff0b5"/>
-      <stop offset=".45" stop-color="#e8be66"/>
-      <stop offset="1" stop-color="#a96932"/>
+    <linearGradient id="cloud" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#d9e8f5"/>
     </linearGradient>
-    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="7" stdDeviation="5" flood-color="#08050b" flood-opacity=".5"/>
+    <linearGradient id="letter" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffda72"/>
+      <stop offset="1" stop-color="#d58b2f"/>
+    </linearGradient>
+    <filter id="shadow" x="-25%" y="-30%" width="150%" height="170%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#102941" flood-opacity=".3"/>
     </filter>
   </defs>
   <g filter="url(#shadow)">
-    <path d="M128 12 148 23 171 20 184 38 207 47 211 70 230 85 225 109 237 129 225 149 230 173 211 188 207 211 184 220 171 238 148 235 128 246 108 235 85 238 72 220 49 211 45 188 26 173 31 149 19 129 31 109 26 85 45 70 49 47 72 38 85 20 108 23Z" fill="#60202b" stroke="url(#gold)" stroke-width="7" stroke-linejoin="round"/>
-    <path d="M128 30 146 40 166 38 177 54 197 62 200 82 216 95 211 115 221 129 211 145 216 165 200 178 197 198 177 206 166 222 146 220 128 230 110 220 90 222 79 206 59 198 56 178 40 165 45 145 35 129 45 115 40 95 56 82 59 62 79 54 90 38 110 40Z" fill="url(#seal)" stroke="url(#gold)" stroke-width="2.5" stroke-linejoin="round"/>
-    <path d="M69 105h118M69 169h118" fill="none" stroke="url(#gold)" stroke-width="2" opacity=".85"/>
-    <path d="m83 82 4 8 9 1-7 6 2 9-8-5-8 5 2-9-7-6 9-1zM173 82l4 8 9 1-7 6 2 9-8-5-8 5 2-9-7-6 9-1z" fill="url(#gold)"/>
-    <text x="128" y="101" fill="#fff0c3" font-family="Georgia,serif" font-size="41" font-weight="700" text-anchor="middle">CCP</text>
-    <text x="128" y="143" fill="#fff0c3" font-family="Georgia,serif" font-size="21" font-weight="700" text-anchor="middle">MONOPOLY</text>
-    <path d="m111 184 17-10 17 10-6 19h-22z" fill="url(#gold)" stroke="#7f4c2b" stroke-width="2" stroke-linejoin="round"/>
-    <circle cx="128" cy="188" r="3" fill="#70232d"/>
+    <path d="M47 184c-22 0-35-13-35-31 0-17 13-30 31-31 4-29 27-49 56-49 19 0 36 9 46 24 7-5 16-8 25-8 24 0 43 18 45 41 22 2 36 16 36 35 0 19-16 35-38 35Z" fill="url(#cloud)" stroke="#294b67" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M47 184h166" fill="none" stroke="#b3cde0" stroke-width="4" stroke-linecap="round"/>
+    <text x="128" y="153" fill="url(#letter)" font-family="Georgia,serif" font-size="67" font-weight="700" letter-spacing="-4" stroke="#294b67" stroke-width="5" paint-order="stroke" text-anchor="middle">CCP</text>
+    <path d="M75 177h106" fill="none" stroke="#294b67" stroke-width="3" stroke-linecap="round" opacity=".75"/>
   </g>
 </svg>
