@@ -17,8 +17,8 @@ import("./dice3d.js").then(({ createDiceAnimator }) => {
 });
 
 const GROUP_COLORS = {
-  brown: "#71869a", lightblue: "#173b76", pink: "#8d245a", orange: "#dc792c",
-  red: "#e23c39", yellow: "#2453a5", green: "#59285f", blue: "#70c2e8",
+  brown: "#ff9b62", lightblue: "#36d9ff", pink: "#ff48c8", orange: "#ffad3f",
+  red: "#ff4f6d", yellow: "#f6f35a", green: "#67f59a", blue: "#74a4ff",
 };
 const COUNTRY_FLAGS = {
   Salvador: "br", Rio: "br", "Tel Aviv": "il", Haifa: "il", Jerusalem: "il",

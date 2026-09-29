@@ -34,19 +34,21 @@
 
 <div id="game" class="screen hidden">
   <div class="game-layout">
-    <aside class="room-column">
+    <aside class="room-column lobby-sidebar" aria-label="Room lobby">
       <div class="room-brand"><img class="room-logo" src="/ccp-monopoly.svg" alt=""><span>CCP Monopoly</span><button id="leaveRoomBtn" class="leave-room-button" type="button">Leave room</button></div>
       <section class="room-share">
-        <div class="panel-heading">Share this game</div>
+        <div class="panel-heading">Room lobby</div>
         <div class="share-row"><input id="shareLink" readonly aria-label="Room invite link"><button id="copyRoomBtn" title="Share or copy the room invite">Share</button></div>
         <div id="copyStatus" class="copy-status" aria-live="polite"></div>
       </section>
       <section class="ad-space" aria-label="Advertisement space"><span>Table lounge</span></section>
-      <section class="chat panel-block">
-        <div class="panel-heading">Chat</div>
-        <div id="chatMessages" class="chat-messages"></div>
-        <div class="chat-input-row"><input id="chatInput" maxlength="250" placeholder="Say something..." aria-label="Chat message"><button id="sendChatBtn" aria-label="Send message">➤</button></div>
-      </section>
+      <div id="roomSettings" class="panel-block room-settings hidden">
+        <div class="panel-heading">Game settings</div>
+        <label class="rule-toggle"><input type="checkbox" id="roomRuleAuction" checked> Auction on decline</label>
+        <label class="rule-toggle"><input type="checkbox" id="roomRuleVacation"> Vacation cash</label>
+        <label class="rule-toggle"><input type="checkbox" id="roomRuleDoubleRent" checked> Double rent on full sets</label>
+        <label class="rule-toggle"><input type="checkbox" id="roomRuleRentFree"> Jailed owners collect no rent</label>
+      </div>
     </aside>
 
     <main class="table-column">
@@ -114,15 +116,16 @@
         </div>
       </div>
       <section class="panel-block property-ledger"><div id="propertyLedgerTitle" class="panel-heading">My properties</div><div id="ownedPropertyList" class="owned-property-list"></div></section>
-      <div id="roomSettings" class="panel-block room-settings hidden">
-        <div class="panel-heading">Game settings</div>
-        <label class="rule-toggle"><input type="checkbox" id="roomRuleAuction" checked> Auction on decline</label>
-        <label class="rule-toggle"><input type="checkbox" id="roomRuleVacation"> Vacation cash</label>
-        <label class="rule-toggle"><input type="checkbox" id="roomRuleDoubleRent" checked> Double rent on full sets</label>
-        <label class="rule-toggle"><input type="checkbox" id="roomRuleRentFree"> Jailed owners collect no rent</label>
-      </div>
       <div class="panel-block rules-summary"><div class="panel-heading">Gameplay rules</div><div id="currentRuleList"></div></div>
       <div id="logPanel" class="log-panel"><div class="panel-heading">Table events</div><div id="log" class="log"></div></div>
+    </aside>
+
+    <aside class="chat-column" aria-label="Chat">
+      <section class="chat panel-block">
+        <div class="panel-heading">Chat</div>
+        <div id="chatMessages" class="chat-messages" aria-live="polite"></div>
+        <div class="chat-input-row"><input id="chatInput" maxlength="250" placeholder="Say something..." aria-label="Chat message"><button id="sendChatBtn" aria-label="Send message">➤</button></div>
+      </section>
     </aside>
   </div>
 </div>
