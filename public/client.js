@@ -17,7 +17,7 @@ import("./dice3d.js").then(({ createDiceAnimator }) => {
 });
 
 const GROUP_COLORS = {
-  brown: "#a95cff", lightblue: "#27d8ff", pink: "#ff3fb4", orange: "#ff8a32",
+  brown: "#a86aff", lightblue: "#27d8ff", pink: "#ff3fb4", orange: "#ff8a32",
   red: "#ff3e68", yellow: "#f5f342", green: "#42ef88", blue: "#39a7ff",
 };
 
@@ -62,7 +62,7 @@ function renderBoardShell() {
   });
   const center = document.createElement("div");
   center.className = "center-cell";
-  center.innerHTML = `<div class="center-room"><img class="center-logo" src="/ccp-monopoly.svg" alt="CCP Monopoly"><span id="centerRoomMessage">Waiting for players</span><button id="roomStartBtn" disabled>Start Game</button></div>`;
+  center.innerHTML = `<div class="center-room"><img class="center-logo" src="/ccp-monopoly.svg" alt="CCP Monopoly"><span id="centerRoomMessage" aria-live="polite">Waiting for players</span><button id="roomStartBtn" disabled>Start Game</button><span id="roomStartError" class="room-start-error" aria-live="polite"></span></div>`;
   board.appendChild(center);
   document.getElementById("roomStartBtn").onclick = startRoomGame;
   document.querySelectorAll(".appearance-color").forEach(button => {
@@ -158,9 +158,19 @@ document.getElementById("leaveRoomBtn").onclick = () => {
 };
 
 function startGameWithRules(rules) {
-  socket.emit("update_rules", rules, () => {
+  const showError = (message) => {
+    const error = document.getElementById("roomStartError");
+    if (error) error.textContent = message;
+    else document.getElementById("lobbyError").textContent = message;
+  };
+  showError("");
+  socket.emit("update_rules", rules, (updateResult) => {
+    if (updateResult?.error) {
+      showError(updateResult.error);
+      return;
+    }
     socket.emit("start_game", {}, (res) => {
-      if (res.error) alert(res.error);
+      if (res?.error) showError(res.error);
     });
   });
 }
@@ -379,10 +389,15 @@ socket.on("state", (state) => {
     document.getElementById("game").classList.remove("hidden");
     renderGame(state);
     document.getElementById("turnBanner").textContent = "Waiting for players";
-    const readyCount = state.players.filter(player => player.ready).length;
+    const readyPlayers = state.players.filter(player => player.ready);
+    const readyCount = readyPlayers.length;
     const canStart = state.players.length >= 2 && readyCount === state.players.length;
     document.getElementById("roomStartBtn").disabled = !canStart;
-    document.getElementById("centerRoomMessage").textContent = state.players.length < 2 ? "Waiting for players..." : canStart ? "Everyone is in · ready to play" : `${readyCount} of ${state.players.length} players ready`;
+    document.getElementById("centerRoomMessage").textContent = state.players.length < 2
+      ? "Invite at least one other player to start."
+      : canStart
+        ? "Everyone is ready. Start the game when you're set."
+        : `Waiting for ${state.players.filter(player => !player.ready).map(player => player.name).join(", ")} to choose a token · ${readyCount} of ${state.players.length} ready.`;
     document.getElementById("roomSettings").classList.remove("hidden");
     document.querySelector(".rules-summary").classList.add("hidden");
     document.querySelector(".manage").classList.add("hidden");
