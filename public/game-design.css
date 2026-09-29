@@ -103,16 +103,40 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 #game { min-height: 100vh; }
 .game-layout {
   display: grid;
-  grid-template-columns: minmax(220px, .78fr) minmax(480px, 1.6fr) minmax(285px, .95fr);
-  gap: 15px;
-  align-items: start;
-  width: min(1680px, 100%);
+  grid-template-columns: minmax(120px, 0.72fr) minmax(420px, 2.2fr) minmax(120px, 0.72fr);
+  gap: 18px;
+  align-items: center;
+  width: min(100%, 1500px);
   min-height: 100vh;
   margin: 0 auto;
-  padding: 16px;
+  padding: 18px 20px 10px;
 }
 .room-column, .table-column, .sidebar { min-width: 0; }
-.room-column { display: grid; min-height: calc(100vh - 32px); grid-template-rows: auto auto minmax(220px, 1fr); gap: 12px; }
+.room-column,
+.sidebar,
+.chat-column {
+  position: relative;
+  min-height: 520px;
+  max-height: calc(100vh - 34px);
+  border: 2px solid rgba(255, 32, 32, 0.95);
+  border-radius: 10px;
+  background: rgba(11, 12, 15, 0.2);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+}
+.room-column {
+  display: grid;
+  grid-template-rows: auto auto minmax(220px, 1fr);
+  gap: 12px;
+  padding: 12px;
+}
+.sidebar {
+  padding: 12px;
+}
+.chat-column {
+  padding: 8px;
+}
 .room-brand { display: flex; min-height: 42px; align-items: center; gap: 9px; color: var(--paper); font: 700 17px "Fraunces", Georgia, serif; }
 .room-brand .room-logo { width: 34px; height: 34px; flex: 0 0 34px; object-fit: contain; }
 .leave-room-button { min-height: 31px; margin-left: auto; padding: 0 10px; border: 1px solid #55725d; border-radius: 5px; color: #d8e1d3; background: transparent; font-size: 11px; }
@@ -154,16 +178,16 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .board-wrap { position: relative; display: flex; width: 100%; min-width: 0; flex-direction: column; align-items: center; justify-content: flex-start; gap: 9px; }
 .board {
   display: grid;
-  width: min(100%, 720px, calc(100svh - 190px));
+  width: min(100%, 760px, calc(100vh - 160px));
   aspect-ratio: 1;
   grid-template-columns: repeat(11, minmax(0, 1fr));
   grid-template-rows: repeat(11, minmax(0, 1fr));
-  gap: 3px;
-  padding: 7px;
-  border: 1px solid #c4b99c;
-  border-radius: 8px;
-  background: #d4c9ac;
-  box-shadow: 0 18px 42px #06140f80;
+  gap: 4px;
+  padding: 12px;
+  border: 3px solid rgba(255, 30, 30, 0.95);
+  border-radius: 12px;
+  background: rgba(9, 12, 16, 0.22);
+  box-shadow: 0 0 0 1px rgba(255, 30, 30, 0.25);
   transition: filter .25s ease, opacity .25s ease, transform .25s ease;
   animation: board-arrive .45s ease both;
 }
@@ -363,17 +387,17 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 @keyframes overlay-in { from { opacity: 0; } to { opacity: 1; } }
 
 @media (max-width: 1180px) {
-  .game-layout { grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr); gap: 12px; padding: 12px; }
-  .table-column { grid-column: 1; grid-row: 1; }
-  .sidebar { grid-column: 2; grid-row: 1; max-height: calc(100svh - 24px); overflow-y: auto; }
-  .room-column { grid-column: 1; grid-row: 2; min-height: 190px; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: minmax(0, 1fr); }
+  .game-layout { grid-template-columns: minmax(110px, .7fr) minmax(0, 1.7fr) minmax(110px, .7fr); gap: 12px; padding: 12px; }
+  .table-column { grid-column: 2; grid-row: 1; }
+  .room-column { grid-column: 1; grid-row: 1; min-height: calc(100vh - 24px); }
+  .sidebar { grid-column: 3; grid-row: 1; }
+  .chat-column { grid-column: 1 / -1; grid-row: 2; max-height: 260px; }
   .room-brand { display: none; }
-  .room-share, .chat.panel-block { grid-row: 1; }
   .board { width: min(100%, 660px, calc(100svh - 185px)); }
 }
 
 @media (min-width: 761px) and (max-width: 1180px) and (orientation: portrait) {
-  .game-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto; }
+  .game-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto auto; }
   .table-column { grid-column: 1; grid-row: 1; }
   .board { width: min(100%, 740px, calc(100vw - 28px)); }
   .sidebar { display: grid; grid-column: 1; grid-row: 2; grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: none; overflow: visible; }
@@ -381,6 +405,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   .sidebar .room-settings, .sidebar .rules-summary { grid-column: 2; }
   .sidebar #auctionArea, .sidebar .log, .sidebar .trade-offer-panel { grid-column: 1 / -1; }
   .room-column { grid-column: 1; grid-row: 3; min-height: 210px; }
+  .chat-column { grid-column: 1; grid-row: 4; max-height: 220px; }
 }
 
 @media (max-width: 760px) {
@@ -476,10 +501,10 @@ body {
 
 #lobby .lobby-box,
 .room-share, .panel-block, #auctionArea {
-  border-color: #3d315e;
+  border-color: rgba(255, 28, 28, 0.7);
   border-radius: var(--radius-md);
-  background: linear-gradient(155deg, #211a3c, #120f25 76%);
-  box-shadow: var(--soft-shadow);
+  background: rgba(24, 21, 31, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 #lobby .lobby-box::before, #lobby .lobby-box::after {
