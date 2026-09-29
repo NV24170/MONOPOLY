@@ -41,7 +41,13 @@
         <div class="share-row"><input id="shareLink" readonly aria-label="Room invite link"><button id="copyRoomBtn" title="Share or copy the room invite">Share</button></div>
         <div id="copyStatus" class="copy-status" aria-live="polite"></div>
       </section>
-      <section class="ad-space" aria-label="Advertisement space"><span>Table lounge</span></section>
+      <div id="roomSettings" class="panel-block room-settings hidden">
+        <div class="panel-heading">Pre-game settings</div>
+        <label class="rule-toggle"><span>Auction on decline</span><input type="checkbox" id="roomRuleAuction" checked></label>
+        <label class="rule-toggle"><span>Vacation cash</span><input type="checkbox" id="roomRuleVacation"></label>
+        <label class="rule-toggle"><span>Double rent on full sets</span><input type="checkbox" id="roomRuleDoubleRent" checked></label>
+        <label class="rule-toggle"><span>Jailed owners collect no rent</span><input type="checkbox" id="roomRuleRentFree"></label>
+      </div>
     </aside>
 
     <main class="table-column">
@@ -77,7 +83,6 @@
               <button class="appearance-color" data-color="#f56e97" style="--swatch:#f56e97" aria-label="Pink"></button>
               <button class="appearance-color" data-color="#7851dc" style="--swatch:#7851dc" aria-label="Violet"></button>
             </div>
-            <button id="appearanceSettingsBtn" class="appearance-settings-button" type="button">Game settings</button>
             <button id="joinGameBtn" class="join-game-button">Ready up <span aria-hidden="true">→</span></button>
             <div id="appearanceError" class="appearance-error" aria-live="polite"></div>
           </div>
@@ -134,17 +139,6 @@
   </div>
   <p id="tradeDialogError" class="trade-error" aria-live="polite"></p>
   <div class="trade-dialog-actions"><button id="tradeCancelBtn" type="button">Cancel</button><button id="tradeSendBtn" type="button">Send offer</button></div>
-</dialog>
-
-<dialog id="roomSettingsDialog" class="trade-dialog room-settings-dialog" aria-labelledby="roomSettingsTitle">
-  <div class="trade-dialog-head"><div><div class="eyebrow">Before starting</div><h2 id="roomSettingsTitle">Game settings</h2></div><button id="settingsCloseBtn" class="dialog-close" type="button" aria-label="Close settings">×</button></div>
-  <div id="roomSettings" class="room-settings">
-    <label class="rule-toggle"><span>Auction on decline</span><input type="checkbox" id="roomRuleAuction" checked></label>
-    <label class="rule-toggle"><span>Vacation cash</span><input type="checkbox" id="roomRuleVacation"></label>
-    <label class="rule-toggle"><span>Double rent on full sets</span><input type="checkbox" id="roomRuleDoubleRent" checked></label>
-    <label class="rule-toggle"><span>Jailed owners collect no rent</span><input type="checkbox" id="roomRuleRentFree"></label>
-  </div>
-  <div class="trade-dialog-actions"><button id="settingsDoneBtn" type="button">Done</button></div>
 </dialog>
 
 <script src="/socket.io/socket.io.js"></script>

@@ -836,24 +836,27 @@ body {
 #game .game-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  place-items: center;
+  place-items: stretch;
   width: 100%;
   max-width: none;
   min-height: 100svh;
   padding: 10px;
+  gap: 10px;
 }
-#game .room-column, #game .sidebar { display: none; }
+#game .room-column { display: grid; grid-template-rows: auto auto minmax(0, 1fr); }
+#game .sidebar { display: flex; }
 #game .table-column {
   grid-column: 1;
   grid-row: 1;
-  width: min(100%, calc(100svh - 52px), calc(100vw - 20px));
+  width: 100%;
   gap: 4px;
 }
+#game .chat-column { display: flex; min-width: 0; }
 #game .table-topline { min-height: 28px; }
 #game .turn-banner { padding: 6px 10px; border-color: #4d3d73; color: #e6ddff; background: #171326; font-size: 11px; }
 #game .room-label { color: #a59bbf; font-size: 10px; }
 #game .board-wrap { gap: 0; }
-#game .board { width: min(100%, calc(100svh - 52px)); max-width: calc(100vw - 20px); }
+#game .board { width: min(100%, calc(100svh - 52px)); max-width: 100%; }
 .space .price {
   z-index: 3;
   padding: 2px 4px;
@@ -934,8 +937,8 @@ body {
 
 @media (max-width: 760px) {
   #game .game-layout { padding: 6px; }
-  #game .table-column { width: min(100%, calc(100svh - 38px), calc(100vw - 12px)); }
-  #game .board { width: min(100%, calc(100svh - 38px)); max-width: calc(100vw - 12px); }
+  #game .table-column { width: 100%; }
+  #game .board { width: min(100%, calc(100svh - 190px)); max-width: 100%; }
   #game .table-topline { min-height: 25px; }
   #game .turn-banner { padding: 5px 8px; font-size: 10px; }
   #game .room-label { font-size: 9px; }
@@ -947,6 +950,37 @@ body {
   .space.edge-right .country-flag { left: 8px; }
   .space.edge-left .country-flag { right: 8px; }
   #space-0 .tokens { gap: 1px; }
+}
+
+@media (min-width: 761px) and (max-width: 1000px) {
+  #game .game-layout { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #game .table-column { grid-column: 1 / -1; grid-row: 1; width: min(100%, calc(100svh - 260px)); }
+  #game .board { width: min(100%, calc(100svh - 300px)); }
+  #game .room-column { grid-column: 1; grid-row: 2; min-height: 0; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; }
+  #game .room-brand, #game .room-column .ad-space { display: none; }
+  #game .sidebar { display: grid; grid-column: 1 / -1; grid-row: 3; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #game .chat-column { grid-column: 2; grid-row: 2; min-height: 220px; }
+  #game .chat-column .chat { min-height: 220px; }
+}
+
+@media (min-width: 1001px) {
+  #game .game-layout { grid-template-columns: minmax(140px, .72fr) minmax(0, 2.3fr) minmax(190px, .95fr) minmax(175px, .9fr); }
+  #game .room-column { grid-column: 1; grid-row: 1; min-height: calc(100svh - 20px); }
+  #game .table-column { grid-column: 2; grid-row: 1; width: 100%; }
+  #game .board { width: min(100%, calc(100svh - 52px)); }
+  #game .sidebar { grid-column: 3; grid-row: 1; max-height: calc(100svh - 20px); overflow-y: auto; }
+  #game .chat-column { grid-column: 4; grid-row: 1; height: calc(100svh - 20px); min-height: 280px; }
+  #game .chat-column .chat { flex: 1; }
+}
+
+@media (max-width: 760px) {
+  #game .game-layout { grid-template-columns: minmax(0, 1fr); }
+  #game .table-column { grid-column: 1; grid-row: 1; }
+  #game .room-column { grid-column: 1; grid-row: 2; min-height: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto; gap: 7px; }
+  #game .room-brand, #game .room-column .ad-space { display: none; }
+  #game .sidebar { grid-column: 1; grid-row: 4; }
+  #game .chat-column { grid-column: 1; grid-row: 3; min-height: 190px; }
+  #game .chat-column .chat { min-height: 190px; }
 }
 
 /* Richup dark board variant */
@@ -1101,13 +1135,8 @@ body {
 }
 
 #game .board {
-  transform: rotate(-90deg);
-  animation: board-arrive-rotated .45s ease both;
-}
-
-@keyframes board-arrive-rotated {
-  from { opacity: 0; transform: rotate(-90deg) scale(.985); }
-  to { opacity: 1; transform: rotate(-90deg) scale(1); }
+  transform: none;
+  animation: board-arrive .45s ease both;
 }
 
 :root {
@@ -1188,20 +1217,14 @@ body {
   box-shadow: 0 0 13px #42f4ff66;
 }
 #game .center-room button:hover:not(:disabled) { background: #a8fbff; box-shadow: 0 0 20px #42f4ff99; }
-#game .room-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
-#game .center-room .center-settings-button { border-color: #ff4edb88; color: #ffd9f7; background: #25162f; box-shadow: 0 0 12px #ff4edb30; }
-#game .center-room .center-settings-button:hover { background: #3a1b43; box-shadow: 0 0 16px #ff4edb55; }
 #game .arena-brand strong { color: var(--neon-pink); text-shadow: 0 0 14px #ff4edb70; }
 #game .dice-area button { border-color: #42f4ff50; color: #eafcff; background: #14202b; }
 #game .dice-area button:hover:not(:disabled) { background: #1d3541; box-shadow: 0 0 12px #42f4ff30; }
 #game .dice-area #endTurnBtn { border-color: #a981ff99; background: #34234f; box-shadow: 0 0 12px #a981ff35; }
 
-.room-settings-dialog { width: min(420px, calc(100vw - 28px)); }
-.room-settings-dialog .room-settings { margin: 0 0 16px; }
-.room-settings-dialog .rule-toggle { min-height: 44px; margin: 0; padding: 7px 2px; border-bottom: 1px solid #ffffff16; color: #eee9ff; font-size: 12px; }
-.room-settings-dialog .rule-toggle:last-child { border-bottom: 0; }
-.room-settings-dialog .rule-toggle input { width: 18px; height: 18px; accent-color: var(--neon-cyan); }
-.appearance-settings-button { min-height: 36px; margin: 0 0 10px; padding: 0 12px; border: 1px solid #ff4edb88; border-radius: 4px; color: #ffd9f7; background: #25162f; font: 600 11px "Rubik", sans-serif; }
-.appearance-settings-button:hover { background: #3a1b43; box-shadow: 0 0 12px #ff4edb44; }
+.room-column .room-settings { min-width: 0; }
+.room-column .room-settings .rule-toggle { align-items: center; gap: 8px; }
+.room-column .room-settings .rule-toggle span { min-width: 0; overflow-wrap: anywhere; }
+.room-column .room-settings .rule-toggle input { width: 16px; height: 16px; flex: 0 0 16px; accent-color: var(--neon-cyan); }
 
 
