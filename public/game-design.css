@@ -1101,13 +1101,13 @@ body {
 }
 
 #game .board {
-  transform: rotate(90deg);
+  transform: rotate(-90deg);
   animation: board-arrive-rotated .45s ease both;
 }
 
 @keyframes board-arrive-rotated {
-  from { opacity: 0; transform: rotate(90deg) scale(.985); }
-  to { opacity: 1; transform: rotate(90deg) scale(1); }
+  from { opacity: 0; transform: rotate(-90deg) scale(.985); }
+  to { opacity: 1; transform: rotate(-90deg) scale(1); }
 }
 
 :root {
@@ -1188,9 +1188,20 @@ body {
   box-shadow: 0 0 13px #42f4ff66;
 }
 #game .center-room button:hover:not(:disabled) { background: #a8fbff; box-shadow: 0 0 20px #42f4ff99; }
+#game .room-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+#game .center-room .center-settings-button { border-color: #ff4edb88; color: #ffd9f7; background: #25162f; box-shadow: 0 0 12px #ff4edb30; }
+#game .center-room .center-settings-button:hover { background: #3a1b43; box-shadow: 0 0 16px #ff4edb55; }
 #game .arena-brand strong { color: var(--neon-pink); text-shadow: 0 0 14px #ff4edb70; }
 #game .dice-area button { border-color: #42f4ff50; color: #eafcff; background: #14202b; }
 #game .dice-area button:hover:not(:disabled) { background: #1d3541; box-shadow: 0 0 12px #42f4ff30; }
 #game .dice-area #endTurnBtn { border-color: #a981ff99; background: #34234f; box-shadow: 0 0 12px #a981ff35; }
+
+.room-settings-dialog { width: min(420px, calc(100vw - 28px)); }
+.room-settings-dialog .room-settings { margin: 0 0 16px; }
+.room-settings-dialog .rule-toggle { min-height: 44px; margin: 0; padding: 7px 2px; border-bottom: 1px solid #ffffff16; color: #eee9ff; font-size: 12px; }
+.room-settings-dialog .rule-toggle:last-child { border-bottom: 0; }
+.room-settings-dialog .rule-toggle input { width: 18px; height: 18px; accent-color: var(--neon-cyan); }
+.appearance-settings-button { min-height: 36px; margin: 0 0 10px; padding: 0 12px; border: 1px solid #ff4edb88; border-radius: 4px; color: #ffd9f7; background: #25162f; font: 600 11px "Rubik", sans-serif; }
+.appearance-settings-button:hover { background: #3a1b43; box-shadow: 0 0 12px #ff4edb44; }
 
 

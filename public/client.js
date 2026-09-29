@@ -137,13 +137,16 @@ function renderBoardShell() {
   });
   const center = document.createElement("div");
   center.className = "center-cell";
-  center.innerHTML = `<div class="center-arena"><div class="center-room"><img class="center-logo" src="/ccp-monopoly.svg" alt="CCP Monopoly"><span id="centerRoomMessage" aria-live="polite">Waiting for players</span><button id="roomStartBtn" disabled>Start Game</button><span id="roomStartError" class="room-start-error" aria-live="polite"></span></div><div class="arena-brand"><span>RICHUP<strong>.IO</strong></span></div></div>`;
+  center.innerHTML = `<div class="center-arena"><div class="center-room"><img class="center-logo" src="/ccp-monopoly.svg" alt="CCP Monopoly"><span id="centerRoomMessage" aria-live="polite">Waiting for players</span><div class="room-actions"><button id="roomSettingsBtn" class="center-settings-button" type="button">Settings</button><button id="roomStartBtn" disabled>Start Game</button></div><span id="roomStartError" class="room-start-error" aria-live="polite"></span></div><div class="arena-brand"><span>RICHUP<strong>.IO</strong></span></div></div>`;
   center.querySelector(".center-arena").append(
     document.getElementById("diceArea"),
     document.getElementById("logPanel"),
   );
   board.appendChild(center);
   document.getElementById("roomStartBtn").onclick = startRoomGame;
+  const openRoomSettings = () => document.getElementById("roomSettingsDialog").showModal();
+  document.getElementById("roomSettingsBtn").onclick = openRoomSettings;
+  document.getElementById("appearanceSettingsBtn").onclick = openRoomSettings;
   document.querySelectorAll(".appearance-color").forEach(button => {
     button.onclick = () => setSelectedAppearance(button.dataset.color);
   });
@@ -317,6 +320,8 @@ document.getElementById("unmortgageBtn").onclick = () => {
 };
 
 document.getElementById("tradeOpenBtn").onclick = openTradeDialog;
+document.getElementById("settingsCloseBtn").onclick = () => document.getElementById("roomSettingsDialog").close();
+document.getElementById("settingsDoneBtn").onclick = () => document.getElementById("roomSettingsDialog").close();
 document.getElementById("tradeCloseBtn").onclick = () => document.getElementById("tradeDialog").close();
 document.getElementById("tradeCancelBtn").onclick = () => document.getElementById("tradeDialog").close();
 document.getElementById("tradeTarget").addEventListener("change", renderTradeProperties);
@@ -455,6 +460,8 @@ socket.on("state", (state) => {
   currentState = state;
   document.getElementById("game").classList.toggle("game-started", state.started);
   if (state.started) {
+    const settingsDialog = document.getElementById("roomSettingsDialog");
+    if (settingsDialog.open) settingsDialog.close();
     document.getElementById("lobby").classList.add("hidden");
     document.getElementById("game").classList.remove("hidden");
     document.getElementById("roomSettings").classList.add("hidden");
