@@ -834,29 +834,26 @@ body {
 
 /* Board-only city edition */
 #game .game-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  place-items: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   max-width: none;
   min-height: 100svh;
   padding: 10px;
-  gap: 10px;
+  gap: 0;
 }
-#game .room-column { display: grid; grid-template-rows: auto auto minmax(0, 1fr); }
-#game .sidebar { display: flex; }
+#game .room-column,
+#game .sidebar,
+#game .chat-column { display: none !important; }
 #game .table-column {
-  grid-column: 1;
-  grid-row: 1;
-  width: 100%;
-  gap: 4px;
+  width: min(100%, 1100px);
+  gap: 0;
+  align-items: center;
 }
-#game .chat-column { display: flex; min-width: 0; }
-#game .table-topline { min-height: 28px; }
-#game .turn-banner { padding: 6px 10px; border-color: #4d3d73; color: #e6ddff; background: #171326; font-size: 11px; }
-#game .room-label { color: #a59bbf; font-size: 10px; }
+#game .table-topline { display: none; }
 #game .board-wrap { gap: 0; }
-#game .board { width: min(100%, calc(100svh - 52px)); max-width: 100%; }
+#game .board { width: min(100%, calc(100vw - 30px), 980px); max-width: 100%; }
 .space .price {
   z-index: 3;
   padding: 2px 4px;
@@ -964,13 +961,12 @@ body {
 }
 
 @media (min-width: 1001px) {
-  #game .game-layout { grid-template-columns: minmax(140px, .72fr) minmax(0, 2.3fr) minmax(190px, .95fr) minmax(175px, .9fr); }
-  #game .room-column { grid-column: 1; grid-row: 1; min-height: calc(100svh - 20px); }
-  #game .table-column { grid-column: 2; grid-row: 1; width: 100%; }
-  #game .board { width: min(100%, calc(100svh - 52px)); }
-  #game .sidebar { grid-column: 3; grid-row: 1; max-height: calc(100svh - 20px); overflow-y: auto; }
-  #game .chat-column { grid-column: 4; grid-row: 1; height: calc(100svh - 20px); min-height: 280px; }
-  #game .chat-column .chat { flex: 1; }
+  #game .game-layout { display: flex; align-items: center; justify-content: center; }
+  #game .room-column,
+  #game .sidebar,
+  #game .chat-column { display: none !important; }
+  #game .table-column { width: min(100%, 1100px); }
+  #game .board { width: min(100%, calc(100vw - 30px), 980px); }
 }
 
 @media (max-width: 760px) {
@@ -1080,6 +1076,7 @@ body {
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-box-orient: vertical;
+  line-clamp: 3;
   -webkit-line-clamp: 3;
   overflow-wrap: normal;
   word-break: normal;
@@ -1090,6 +1087,7 @@ body {
   white-space: nowrap;
   writing-mode: horizontal-tb;
   transform: rotate(90deg);
+  line-clamp: unset;
   -webkit-line-clamp: unset;
 }
 #game .space.edge-left .name { transform: rotate(-90deg); }
@@ -1121,12 +1119,24 @@ body {
 #game .dice-area button { grid-column: 1; grid-row: 3; min-height: 30px; }
 #game .arena-brand {
   grid-row: 2;
+  display: grid;
+  place-items: center;
   color: #fff;
   font-family: "Rubik", sans-serif;
-  font-size: clamp(22px, 4.2vw, 58px);
-  font-weight: 800;
+  font-size: clamp(74px, 7vw, 180px);
+  line-height: .78;
+  letter-spacing: -0.08em;
+  font-weight: 900;
+  text-transform: uppercase;
+  text-shadow: 0 0 24px rgba(173, 140, 255, 0.4);
 }
-#game .arena-brand strong { color: #8680b0; font-weight: 800; }
+#game .arena-brand strong {
+  color: #b59bff;
+  font-weight: 900;
+  font-size: 0.38em;
+  letter-spacing: -0.05em;
+  vertical-align: baseline;
+}
 #game .log-panel { display: none; }
 #game .dice-area button {
   border: 1px solid #ffffff26;
@@ -1245,5 +1255,26 @@ body {
 .room-column .room-settings .rule-toggle { align-items: center; gap: 8px; }
 .room-column .room-settings .rule-toggle span { min-width: 0; overflow-wrap: anywhere; }
 .room-column .room-settings .rule-toggle input { width: 16px; height: 16px; flex: 0 0 16px; accent-color: var(--neon-cyan); }
+
+/* Keep side-city labels readable inside the short edge tiles. */
+#game .space.edge-right .name,
+#game .space.edge-left .name {
+  width: 100%;
+  max-width: 100%;
+  margin: auto 0;
+  transform: none;
+  writing-mode: horizontal-tb;
+  white-space: normal;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  line-height: 1.05;
+  text-align: center;
+}
+#game .space.edge-left .name { transform: rotate(180deg); }
 
 
