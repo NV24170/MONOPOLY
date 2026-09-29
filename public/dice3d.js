@@ -90,15 +90,6 @@ export function createDiceAnimator(container) {
   rimLight.position.set(3, 2, -4);
   scene.add(rimLight);
 
-  const ground = new THREE.Mesh(
-    new THREE.CircleGeometry(1.35, 48),
-    new THREE.MeshBasicMaterial({ color: 0x09070d, transparent: true, opacity: 0.22, depthWrite: false }),
-  );
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.y = -0.52;
-  ground.scale.set(1.5, 0.58, 1);
-  scene.add(ground);
-
   const faceMaterials = faceValues.map(value => new THREE.MeshStandardMaterial({
     map: makeFaceTexture(value),
     roughness: 0.3,
@@ -108,12 +99,9 @@ export function createDiceAnimator(container) {
     const geometry = new THREE.BoxGeometry(0.88, 0.88, 0.88);
     const mesh = new THREE.Mesh(geometry, faceMaterials);
     mesh.position.set(x, 0, index === 0 ? 0.06 : -0.06);
-    mesh.quaternion.copy(orientationFor(1, index * 0.32));
-    const edges = new THREE.LineSegments(
-      new THREE.EdgesGeometry(geometry),
-      new THREE.LineBasicMaterial({ color: 0xd8d2e3, transparent: true, opacity: 0.5 }),
-    );
-    mesh.add(edges);
+    mesh.quaternion.copy(orientationFor(index === 0 ? 2 : 5, index * 0.32));
+    mesh.rotateZ(index === 0 ? -0.16 : 0.16);
+    mesh.rotateX(index === 0 ? 0.08 : -0.08);
     scene.add(mesh);
     return mesh;
   });

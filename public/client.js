@@ -17,9 +17,53 @@ import("./dice3d.js").then(({ createDiceAnimator }) => {
 });
 
 const GROUP_COLORS = {
-  brown: "#a86aff", lightblue: "#27d8ff", pink: "#ff3fb4", orange: "#ff8a32",
-  red: "#ff3e68", yellow: "#f5f342", green: "#42ef88", blue: "#39a7ff",
+  brown: "#71869a", lightblue: "#173b76", pink: "#8d245a", orange: "#dc792c",
+  red: "#e23c39", yellow: "#2453a5", green: "#59285f", blue: "#70c2e8",
 };
+const COUNTRY_FLAGS = {
+  Salvador: "br", Rio: "br", "Tel Aviv": "il", Haifa: "il", Jerusalem: "il",
+  Venice: "it", Milan: "it", Rome: "it", Frankfurt: "de", Munich: "de", Berlin: "de",
+  Shenzhen: "cn", Beijing: "cn", Shanghai: "cn", Lyon: "fr", Toulouse: "fr", Paris: "fr",
+  Liverpool: "gb", Manchester: "gb", London: "gb", "San Francisco": "us", "New York": "us",
+};
+const FLAG_ART = {
+  br: '<circle fill="#168b4b" cx="18" cy="18" r="18"/><path fill="#f7d447" d="m18 5 14 13-14 13L4 18z"/><circle fill="#2454a4" cx="18" cy="18" r="7"/>',
+  il: '<circle fill="#fff" cx="18" cy="18" r="18"/><path stroke="#1768ae" stroke-width="2.5" d="M5 11h26M5 25h26"/><path fill="none" stroke="#1768ae" stroke-width="1.7" d="m18 11 6 10H12z m0 14-6-10h12z"/>',
+  it: '<circle fill="#fff" cx="18" cy="18" r="18"/><path fill="#159447" d="M0 0h12v36H0z"/><path fill="#df3d46" d="M24 0h12v36H24z"/>',
+  de: '<circle fill="#d9363e" cx="18" cy="18" r="18"/><path fill="#17191d" d="M0 0h36v12H0z"/><path fill="#f4c847" d="M0 24h36v12H0z"/>',
+  cn: '<circle fill="#df2636" cx="18" cy="18" r="18"/><path fill="#ffdf4c" d="m10 7 1.1 3.2h3.3l-2.7 2 1 3.2-2.7-2-2.7 2 1-3.2-2.7-2h3.3z m9 1 .5 1.4H21l-1.2.9.5 1.4-1.2-.9-1.2.9.5-1.4-1.2-.9h1.5z m3 4 .5 1.4H24l-1.2.9.5 1.4-1.2-.9-1.2.9.5-1.4-1.2-.9h1.5z m-.5 6 .5 1.4h1.5l-1.2.9.5 1.4-1.2-.9-1.2.9.5-1.4-1.2-.9h1.5z m-3 5 .5 1.4h1.5l-1.2.9.5 1.4-1.2-.9-1.2.9.5-1.4-1.2-.9h1.5z"/>',
+  fr: '<circle fill="#fff" cx="18" cy="18" r="18"/><path fill="#2454a4" d="M0 0h12v36H0z"/><path fill="#e33d49" d="M24 0h12v36H24z"/>',
+  gb: '<circle fill="#23437c" cx="18" cy="18" r="18"/><path stroke="#fff" stroke-width="8" d="m2 2 32 32M34 2 2 34"/><path stroke="#d83c4a" stroke-width="3" d="m2 2 32 32M34 2 2 34"/><path stroke="#fff" stroke-width="12" d="M18 0v36M0 18h36"/><path stroke="#d83c4a" stroke-width="5" d="M18 0v36M0 18h36"/>',
+  us: '<circle fill="#fff" cx="18" cy="18" r="18"/><path stroke="#d73c4b" stroke-width="3" d="M0 5h36M0 11h36M0 17h36M0 23h36M0 29h36M0 35h36"/><path fill="#2454a4" d="M0 0h18v19H0z"/><path fill="#fff" d="m4 3 .6 1.4h1.5l-1.2.9.5 1.4-1.4-.8-1.2.8.5-1.4-1.2-.9h1.5z m7 0 .6 1.4h1.5l-1.2.9.5 1.4-1.4-.8-1.2.8.5-1.4-1.2-.9h1.5z m-3.5 6 .6 1.4h1.5l-1.2.9.5 1.4-1.4-.8-1.2.8.5-1.4-1.2-.9h1.5z m7 0 .6 1.4h1.5l-1.2.9.5 1.4-1.4-.8-1.2.8.5-1.4-1.2-.9h1.5z m-7 6 .6 1.4h1.5l-1.2.9.5 1.4-1.4-.8-1.2.8.5-1.4-1.2-.9h1.5z m-3.5-6 .6 1.4h1.5l-1.2.9.5 1.4-1.4-.8-1.2.8.5-1.4-1.2-.9h1.5z"/>',
+};
+
+function flagSvg(flag, id) {
+  const clipId = `flag-clip-${id}`;
+  return `<svg viewBox="0 0 36 36" aria-hidden="true"><defs><clipPath id="${clipId}"><circle cx="18" cy="18" r="17"/></clipPath></defs><g clip-path="url(#${clipId})">${FLAG_ART[flag]}</g><circle cx="18" cy="18" r="17" fill="none" stroke="#fff" stroke-width="1.5"/></svg>`;
+}
+const TILE_ICONS = {
+  chest: '<svg viewBox="0 0 64 64"><path d="M10 26h44v27H10z" fill="#cf762e" stroke="currentColor" stroke-width="3"/><path d="M8 23h48v9H8z" fill="#f0b84d" stroke="currentColor" stroke-width="3"/><path d="M17 22c0-9 7-15 15-15s15 6 15 15" fill="#d99036" stroke="currentColor" stroke-width="3"/><path d="M27 33h10v13H27z" fill="#ffda68" stroke="currentColor" stroke-width="2"/><circle cx="32" cy="39" r="2" fill="#8b4c2a"/></svg>',
+  invoice: '<svg viewBox="0 0 64 64"><path d="M17 7h22l10 10v40H17z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M39 8v11h10M24 29h18M24 37h18M24 45h12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>',
+  plane: '<svg viewBox="0 0 64 64"><path d="m32 5 6 4 2 18 17 12v6L39 40l-2 16-5 3-5-3-2-16L8 45v-6l17-12 2-18z" fill="currentColor"/><path d="M27 43h10" stroke="#8793a5" stroke-width="3"/></svg>',
+  bolt: '<svg viewBox="0 0 64 64"><path d="M36 4 14 36h15l-2 24 23-35H34z" fill="#ffd34e" stroke="#fff0a0" stroke-width="2" stroke-linejoin="round"/></svg>',
+  water: '<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="currentColor" stroke-width="3"/><path d="M32 12c-6 9-14 18-14 27a14 14 0 0 0 28 0c0-9-8-18-14-27Z" fill="#7bd4ec" stroke="currentColor" stroke-width="2.5"/><path d="M25 42c1 4 4 6 8 6" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>',
+  vacation: '<svg viewBox="0 0 64 64"><path d="m12 10 21 4-8 26-21-5z" fill="#fff" stroke="#d9dce7" stroke-width="2"/><path d="m7 35 18 4M18 40v11m22-13h14l-3 11H38zM40 49l-5 8m14-8 5 8M38 38l-6-7" fill="none" stroke="#5ebd72" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  cage: '<svg viewBox="0 0 64 64"><path d="M8 9h48v47H8z" fill="#78808d"/><path d="M10 8v49m4.4-49v49m4.4-49v49m4.4-49v49m4.4-49v49m4.4-49v49m4.4-49v49m4.4-49v49m4.4-49v49m4.4-49v49m4.4-49v49M8 18h48M8 47h48" stroke="#f4f5f7" stroke-width="2.5"/></svg>',
+  cap: '<svg viewBox="0 0 64 64"><path d="M9 35c2-10 11-17 23-17s21 7 23 17l-3 9H12z" fill="#f6f7fa"/><path d="M8 36h48c0 5-5 9-12 10H19C12 45 8 41 8 36Z" fill="#cbd3e1"/><path d="m21 23 11-8 11 8M26 19h12" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>',
+  diamond: '<svg viewBox="0 0 64 64"><path d="m13 25 9-13h20l9 13-19 27z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="m13 25 19 3 19-3M22 12l10 16 10-16M32 28v24" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+};
+
+function tileIcon(space, edge) {
+  if (space.type === "community_chest") return TILE_ICONS.chest;
+  if (space.type === "tax") return space.id === 38 ? TILE_ICONS.diamond : TILE_ICONS.invoice;
+  if (space.type === "railroad") return `<span class="plane-icon edge-${edge}">${TILE_ICONS.plane}</span>`;
+  if (space.type === "utility") return space.id === 28 ? TILE_ICONS.water : TILE_ICONS.bolt;
+  if (space.type === "chance") return '<span class="chance-mark">?</span>';
+  if (space.type === "free_parking") return TILE_ICONS.vacation;
+  if (space.type === "jail") return TILE_ICONS.cage;
+  if (space.type === "go_to_jail") return TILE_ICONS.cap;
+  return "";
+}
 
 fetch("/board-data").then(r => r.json()).then(data => {
   BOARD = data;
@@ -28,10 +72,14 @@ fetch("/board-data").then(r => r.json()).then(data => {
 
 // ---- Grid position helper ----
 function gridPos(i) {
-  if (i <= 10) return { row: 11, col: 11 - i };
-  if (i <= 20) return { row: 11 - (i - 10), col: 1 };
-  if (i <= 30) return { row: 1, col: 1 + (i - 20) };
-  return { row: 1 + (i - 30), col: 11 };
+  if (i === 0) return { row: "1 / span 2", col: "1 / span 2", edge: "corner" };
+  if (i <= 9) return { row: "1 / span 2", col: i + 2, edge: "edge-top" };
+  if (i === 10) return { row: "1 / span 2", col: "12 / span 2", edge: "corner" };
+  if (i <= 19) return { row: i - 8, col: "12 / span 2", edge: "edge-right" };
+  if (i === 20) return { row: "12 / span 2", col: "12 / span 2", edge: "corner" };
+  if (i <= 29) return { row: "12 / span 2", col: 32 - i, edge: "edge-bottom" };
+  if (i === 30) return { row: "12 / span 2", col: "1 / span 2", edge: "corner" };
+  return { row: 42 - i, col: "1 / span 2", edge: "edge-left" };
 }
 
 function playerColor(player, index) {
@@ -42,27 +90,58 @@ function renderBoardShell() {
   const board = document.getElementById("board");
   board.innerHTML = "";
   BOARD.forEach((space, i) => {
-    const { row, col } = gridPos(i);
+    const { row, col, edge } = gridPos(i);
     const div = document.createElement("div");
-    div.className = "space";
+    div.className = `space tile-${space.type}${edge === "corner" ? " corner-tile" : ""} ${edge}`;
     div.id = "space-" + i;
     div.style.gridRow = row;
     div.style.gridColumn = col;
     div.style.setProperty("--tile-index", i);
-    let html = "";
+    const symbol = document.createElement("div");
+    symbol.className = "tile-symbol";
+    symbol.setAttribute("aria-hidden", "true");
+    symbol.innerHTML = tileIcon(space, edge);
+    div.appendChild(symbol);
     if (space.group) {
-      html += `<div class="color-bar" style="background:${GROUP_COLORS[space.group]}"></div>`;
+      const colorBar = document.createElement("div");
+      colorBar.className = "color-bar";
+      colorBar.style.background = GROUP_COLORS[space.group];
+      div.appendChild(colorBar);
     }
-    html += `<div class="tokens" id="tokens-${i}"></div>`;
-    html += `<div class="name">${space.name}</div>`;
-    if (space.price) html += `<div class="price">$${space.price}</div>`;
-    html += `<div class="owner-tag" id="owner-${i}"></div>`;
-    div.innerHTML = html;
+    const tokens = document.createElement("div");
+    tokens.className = "tokens";
+    tokens.id = `tokens-${i}`;
+    const flag = COUNTRY_FLAGS[space.name];
+    if (flag) {
+      const flagBadge = document.createElement("span");
+      flagBadge.className = "country-flag";
+      flagBadge.innerHTML = flagSvg(flag, space.id);
+      flagBadge.setAttribute("aria-label", `${space.name} country flag`);
+      div.appendChild(flagBadge);
+    }
+    const name = document.createElement("div");
+    name.className = "name";
+    name.textContent = space.name;
+    div.append(tokens, name);
+    if (space.price || space.id === 38) {
+      const price = document.createElement("div");
+      price.className = "price";
+      price.textContent = space.id === 38 ? "$75" : `${space.price}$`;
+      div.appendChild(price);
+    }
+    const owner = document.createElement("div");
+    owner.className = "owner-tag";
+    owner.id = `owner-${i}`;
+    div.appendChild(owner);
     board.appendChild(div);
   });
   const center = document.createElement("div");
   center.className = "center-cell";
-  center.innerHTML = `<div class="center-room"><img class="center-logo" src="/ccp-monopoly.svg" alt="CCP Monopoly"><span id="centerRoomMessage" aria-live="polite">Waiting for players</span><button id="roomStartBtn" disabled>Start Game</button><span id="roomStartError" class="room-start-error" aria-live="polite"></span></div>`;
+  center.innerHTML = `<div class="center-arena"><div class="center-room"><img class="center-logo" src="/ccp-monopoly.svg" alt="CCP Monopoly"><span id="centerRoomMessage" aria-live="polite">Waiting for players</span><button id="roomStartBtn" disabled>Start Game</button><span id="roomStartError" class="room-start-error" aria-live="polite"></span></div><div class="arena-brand"><span>RICHUP<strong>.IO</strong></span></div></div>`;
+  center.querySelector(".center-arena").append(
+    document.getElementById("diceArea"),
+    document.getElementById("logPanel"),
+  );
   board.appendChild(center);
   document.getElementById("roomStartBtn").onclick = startRoomGame;
   document.querySelectorAll(".appearance-color").forEach(button => {
@@ -374,6 +453,7 @@ socket.on("chat_message", ({ name, text }) => {
 // ---- State rendering ----
 socket.on("state", (state) => {
   currentState = state;
+  document.getElementById("game").classList.toggle("game-started", state.started);
   if (state.started) {
     document.getElementById("lobby").classList.add("hidden");
     document.getElementById("game").classList.remove("hidden");
@@ -532,10 +612,15 @@ function renderGame(state) {
       spaceEl.classList.remove("house-owned");
     }
   });
+  const vacationSpace = document.querySelector("#space-20 .name");
+  if (vacationSpace) vacationSpace.textContent = state.freeParkingPot ? `Vacation\n$${state.freeParkingPot} on hold` : "Vacation";
 
   // Manage properties dropdown (only my properties)
   const select = document.getElementById("myPropsSelect");
   select.innerHTML = "";
+  const propertyList = document.getElementById("ownedPropertyList");
+  propertyList.replaceChildren();
+  document.getElementById("propertyLedgerTitle").textContent = `My properties (${me?.properties.length || 0})`;
   if (me) {
     me.properties.forEach(id => {
       const space = BOARD[id];
@@ -544,6 +629,20 @@ function renderGame(state) {
       opt.value = id;
       opt.textContent = `${space.name}${owned.mortgaged ? " (mortgaged)" : ""}${owned.houses ? ` [${owned.houses}h]` : ""}${owned.hotel ? " [hotel]" : ""}`;
       select.appendChild(opt);
+
+      const row = document.createElement("div");
+      row.className = "owned-property-row";
+      const marker = document.createElement("span");
+      marker.className = "owned-property-marker";
+      marker.style.background = GROUP_COLORS[space.group] || (space.type === "railroad" ? "#707b92" : "#63b8df");
+      const name = document.createElement("span");
+      name.className = "owned-property-name";
+      name.textContent = space.name;
+      const detail = document.createElement("span");
+      detail.className = "owned-property-detail";
+      detail.textContent = owned.hotel ? "HOTEL" : owned.houses ? `${owned.houses}H` : owned.mortgaged ? "MORTGAGED" : "";
+      row.append(marker, name, detail);
+      propertyList.appendChild(row);
     });
   }
 

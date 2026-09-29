@@ -188,7 +188,7 @@ class Game {
     player.position = (player.position + spaces) % 40;
     if (player.position < prev) {
       player.cash += 200;
-      this.addLog(`${player.name} passed GO and collected $200.`);
+      this.addLog(`${player.name} passed START and collected $200.`);
     }
   }
 
@@ -236,7 +236,7 @@ class Game {
       case "free_parking":
         if (this.rules.vacationCash && this.freeParkingPot > 0) {
           player.cash += this.freeParkingPot;
-          this.addLog(`${player.name} collected $${this.freeParkingPot} from Free Parking.`);
+          this.addLog(`${player.name} collected $${this.freeParkingPot} from Vacation.`);
           this.freeParkingPot = 0;
         }
         this.phase = "postroll";

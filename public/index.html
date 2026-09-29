@@ -6,7 +6,7 @@
 <title>CCP Monopoly</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Rubik:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="game-design.css" />
 </head>
 <body>
@@ -27,7 +27,7 @@
       <label class="rule-toggle"><input type="checkbox" id="ruleAuction" checked> Auction on decline</label>
       <label class="rule-toggle"><input type="checkbox" id="ruleVacation"> Vacation cash (Free Parking pot)</label>
       <label class="rule-toggle"><input type="checkbox" id="ruleDoubleRent" checked> x2 rent on full monopoly (no houses)</label>
-       <button id="startBtn">Start Game</button><span id="startError" class="error hidden">Failed to start game</span>
+      <button id="startBtn">Start Game</button>
     </div>
   </div>
 </div>
@@ -41,6 +41,7 @@
         <div class="share-row"><input id="shareLink" readonly aria-label="Room invite link"><button id="copyRoomBtn" title="Share or copy the room invite">Share</button></div>
         <div id="copyStatus" class="copy-status" aria-live="polite"></div>
       </section>
+      <section class="ad-space" aria-label="Advertisement space"><span>Table lounge</span></section>
       <section class="chat panel-block">
         <div class="panel-heading">Chat</div>
         <div id="chatMessages" class="chat-messages"></div>
@@ -52,7 +53,7 @@
       <div class="table-topline"><span id="turnBanner" class="turn-banner"></span><span id="roomLabel" class="room-label"></span></div>
       <div class="board-wrap">
         <div id="board" class="board"></div>
-        <div class="dice-area">
+        <div id="diceArea" class="dice-area">
           <div id="diceStage" class="dice-stage" role="img" aria-label="Animated dice">
             <div id="dice3d" class="dice-canvas"></div>
           </div>
@@ -112,6 +113,7 @@
           <button id="unmortgageBtn">Unmortgage</button>
         </div>
       </div>
+      <section class="panel-block property-ledger"><div id="propertyLedgerTitle" class="panel-heading">My properties</div><div id="ownedPropertyList" class="owned-property-list"></div></section>
       <div id="roomSettings" class="panel-block room-settings hidden">
         <div class="panel-heading">Game settings</div>
         <label class="rule-toggle"><input type="checkbox" id="roomRuleAuction" checked> Auction on decline</label>
@@ -120,7 +122,7 @@
         <label class="rule-toggle"><input type="checkbox" id="roomRuleRentFree"> Jailed owners collect no rent</label>
       </div>
       <div class="panel-block rules-summary"><div class="panel-heading">Gameplay rules</div><div id="currentRuleList"></div></div>
-      <div id="log" class="log panel-block"></div>
+      <div id="logPanel" class="log-panel"><div class="panel-heading">Table events</div><div id="log" class="log"></div></div>
     </aside>
   </div>
 </div>

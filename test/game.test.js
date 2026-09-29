@@ -10,6 +10,18 @@ function createGame() {
   return game;
 }
 
+test("the city board matches the supplied clockwise location order", () => {
+  assert.deepEqual(BOARD.map(space => space.name), [
+    "START", "Salvador", "Treasure Chest", "Rio", "Income Tax", "TLV Airport",
+    "Tel Aviv", "Surprise Box", "Haifa", "Jerusalem", "Passing by / In Prison",
+    "Venice", "Electric Company", "Milan", "Rome", "MUX Airport", "Frankfurt",
+    "Treasure Chest", "Munich", "Berlin", "Vacation", "Shenzhen", "Surprise Box",
+    "Beijing", "Shanghai", "CDG Airport", "Lyon", "Toulouse", "Water Company", "Paris",
+    "Go to Prison", "Liverpool", "Manchester", "Treasure Chest", "London", "JFK Airport",
+    "Surprise Box", "San Francisco", "Luxury Tax", "New York",
+  ]);
+});
+
 test("hotel rent uses the hotel rent tier", () => {
   const game = createGame();
   game.players[0].properties = [37, 39];
