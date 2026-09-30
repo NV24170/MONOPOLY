@@ -265,3 +265,79 @@ test("a jail fine cannot put a player into negative cash", () => {
   assert.match(game.payJailFine("p1").error, /enough cash/i);
   assert.equal(game.players[0].cash, 20);
 });
+
+test("a player who goes bankrupt on their own roll passes the turn to the next player", () => {
+  const game = createGame();
+  game.addPlayer("p3", "Player Three", "s3");
+  game.started = true;
+  game.phase = "preroll";
+  const roller = game.getPlayer("p1");
+  roller.position = 36;
+  roller.cash = 10;
+  game.players[1].properties = [39];
+  game.ownership[39] = { ownerId: "p2", houses: 0, hotel: true, mortgaged: false };
+
+  const values = [0, 0.2]; // dice 1 and 2 -> lands on New York (39)
+  const realRandom = Math.random;
+  Math.random = () => values.shift() ?? 0.5;
+  try {
+    assert.equal(game.rollDice("p1").error, undefined);
+  } finally {
+    Math.random = realRandom;
+  }
+
+  assert.equal(roller.bankrupt, true);
+  assert.equal(game.currentPlayer().id, "p2");
+  assert.equal(game.phase, "preroll");
+});
+
+test("bots fill empty seats and give a seat back to a joining human", () => {
+  const game = new Game("bots");
+  game.addPlayer("h1", "Human", "s1");
+  game.settings.maxPlayers = 3;
+  game.settings.allowBots = true;
+  game.syncBots();
+  assert.equal(game.players.length, 3);
+  assert.equal(game.players.filter(p => p.bot).length, 2);
+
+  assert.deepEqual(game.addPlayer("h2", "Second", "s2"), { ok: true });
+  assert.equal(game.players.length, 3);
+  assert.equal(game.players.filter(p => p.bot).length, 1);
+});
+
+test("settings can only be changed before the game starts and are validated", () => {
+  const game = createGame();
+  assert.match(game.updateSettings({ settings: { maxPlayers: 99 } }).error, /between 2 and 8/i);
+  assert.deepEqual(game.updateSettings({ settings: { maxPlayers: 6, startingCash: 2000 }, rules: { mortgage: true } }), { ok: true });
+  game.chooseAppearance("p1", "#c1dd4b");
+  game.chooseAppearance("p2", "#f8c845");
+  game.start();
+  assert.equal(game.players[0].cash, 2000);
+  assert.match(game.updateSettings({ settings: { maxPlayers: 4 } }).error, /after the game starts/i);
+});
+
+test("mortgages can be turned off, and even-build can be relaxed", () => {
+  const game = createGame();
+  game.players[0].properties = [1, 3];
+  game.ownership[1] = { ownerId: "p1", houses: 0, hotel: false, mortgaged: false };
+  game.ownership[3] = { ownerId: "p1", houses: 0, hotel: false, mortgaged: false };
+  game.rules.mortgage = false;
+  assert.match(game.mortgageProperty("p1", 1).error, /turned off/i);
+
+  game.rules.evenBuild = false;
+  assert.deepEqual(game.buildHouse("p1", 1), { ok: true });
+  assert.deepEqual(game.buildHouse("p1", 1), { ok: true });
+  assert.equal(game.ownership[1].houses, 2);
+});
+
+test("game actions emit animation events for the client", () => {
+  const game = createGame();
+  game.players[0].properties = [];
+  game.currentPlayer().position = 1;
+  game.phase = "awaiting_buy";
+  game.buyProperty("p1");
+  const buy = game.events.find(e => e.type === "buy");
+  assert.equal(buy.spaceId, 1);
+  assert.equal(buy.playerId, "p1");
+  assert.ok(game.getState().events.length > 0);
+});

@@ -3,145 +3,187 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#150f24" />
 <title>CCP Monopoly</title>
+<link rel="icon" href="/ccp-monopoly.svg" type="image/svg+xml" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Rubik:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="game-design.css" />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
 
-<div id="lobby" class="screen">
-  <div class="lobby-box">
-    <img class="brand-logo" src="/ccp-monopoly.svg" alt="CCP Monopoly">
-    <h1>CCP Monopoly</h1>
-    <p class="lobby-tagline">Buy well. Build evenly. Stay in the game.</p>
-    <input id="nameInput" placeholder="Your name" maxlength="16" />
-    <input id="roomInput" value="default" placeholder="Room code (default is public lobby)" maxlength="20" />
-    <button id="joinBtn" class="primary-action">Join Room</button>
-    <button id="createRoomBtn" class="secondary-action">Create a private game</button>
-    <p id="lobbyError" class="error"></p>
-    <div id="waitingRoom" class="hidden">
-      <h3>Players in room:</h3>
-      <ul id="playerList"></ul>
-      <label class="rule-toggle"><input type="checkbox" id="ruleAuction" checked> Auction on decline</label>
-      <label class="rule-toggle"><input type="checkbox" id="ruleVacation"> Vacation cash (Free Parking pot)</label>
-      <label class="rule-toggle"><input type="checkbox" id="ruleDoubleRent" checked> x2 rent on full monopoly (no houses)</label>
-      <button id="startBtn">Start Game</button>
+<!-- ============ Landing ============ -->
+<section id="landing" class="screen landing">
+  <div class="landing-bg" aria-hidden="true"></div>
+  <button id="soundBtnLanding" class="icon-btn landing-sound" type="button" aria-label="Toggle sound"></button>
+  <div class="landing-center">
+    <div class="hero-dice" aria-hidden="true">
+      <div class="die">
+        <i></i><i></i><i></i><i></i><i></i><i></i>
+      </div>
     </div>
+    <h1 class="wordmark">CCP<span>MONOPOLY</span></h1>
+    <p class="tagline">Rule the economy</p>
+    <label class="sr-only" for="nameInput">Your name</label>
+    <input id="nameInput" class="text-input" maxlength="16" placeholder="Your name" autocomplete="off" spellcheck="false" />
+    <button id="playBtn" class="btn-primary xl" type="button"><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 6 6-6 6M13 6l6 6-6 6"/></svg><span id="playLabel">Play</span></button>
+    <div class="landing-links">
+      <button id="allRoomsBtn" class="btn-soft" type="button"><span data-icon="users"></span>All rooms</button>
+      <button id="createPrivateBtn" class="btn-soft" type="button"><span data-icon="key"></span>Create a private game</button>
+    </div>
+    <p id="landingError" class="error" role="alert"></p>
   </div>
-</div>
+  <div class="landing-floor" aria-hidden="true"></div>
+</section>
 
-<div id="game" class="screen hidden">
-  <div class="game-layout">
-    <aside class="room-column lobby-sidebar" aria-label="Room lobby">
-      <div class="room-brand"><img class="room-logo" src="/ccp-monopoly.svg" alt=""><span>CCP Monopoly</span><button id="leaveRoomBtn" class="leave-room-button" type="button">Leave room</button></div>
-      <section class="room-share">
-        <div class="panel-heading">Room lobby</div>
-        <div class="share-row"><input id="shareLink" readonly aria-label="Room invite link"><button id="copyRoomBtn" title="Share or copy the room invite">Share</button></div>
-        <div id="copyStatus" class="copy-status" aria-live="polite"></div>
-      </section>
-      <div id="roomSettings" class="panel-block room-settings hidden">
-        <div class="panel-heading">Pre-game settings</div>
-        <label class="rule-toggle"><span>Auction on decline</span><input type="checkbox" id="roomRuleAuction" checked></label>
-        <label class="rule-toggle"><span>Vacation cash</span><input type="checkbox" id="roomRuleVacation"></label>
-        <label class="rule-toggle"><span>Double rent on full sets</span><input type="checkbox" id="roomRuleDoubleRent" checked></label>
-        <label class="rule-toggle"><span>Jailed owners collect no rent</span><input type="checkbox" id="roomRuleRentFree"></label>
+<!-- ============ Game / lobby ============ -->
+<div id="app" class="app hidden">
+  <aside class="col col-left">
+    <div class="brand-row">
+      <img class="brand-logo" src="/ccp-monopoly.svg" alt="" />
+      <span class="brand-word">CCP<b>MONOPOLY</b></span>
+      <span class="spacer"></span>
+      <button id="soundBtn" class="icon-btn" type="button" aria-label="Toggle sound"></button>
+      <button id="leaveBtn" class="icon-btn" type="button" aria-label="Leave room" title="Leave room" data-icon="logout"></button>
+    </div>
+    <section class="panel share-panel">
+      <h2 class="panel-title">Share this game</h2>
+      <div class="share-row">
+        <input id="shareLink" readonly aria-label="Room invite link" />
+        <button id="copyBtn" class="btn-dark" type="button"><span data-icon="copy"></span><span id="copyLabel">Copy</span></button>
       </div>
-    </aside>
+    </section>
+    <section class="panel chat-panel">
+      <h2 class="panel-title">Chat</h2>
+      <div id="feed" class="feed" aria-live="polite"><p class="feed-empty" id="feedEmpty"><span data-icon="chat"></span>No messages yet</p></div>
+      <form id="chatForm" class="chat-form" autocomplete="off">
+        <input id="chatInput" maxlength="250" placeholder="Say something..." aria-label="Chat message" />
+        <button class="send" type="submit" aria-label="Send message" data-icon="send"></button>
+      </form>
+    </section>
+  </aside>
 
-    <main class="table-column">
-      <div class="table-topline"><span id="turnBanner" class="turn-banner"></span><span id="roomLabel" class="room-label"></span></div>
-      <div class="board-wrap">
-        <div id="board" class="board"></div>
-        <div id="diceArea" class="dice-area">
-          <div id="diceStage" class="dice-stage" role="img" aria-label="Animated dice">
-            <div id="dice3d" class="dice-canvas"></div>
+  <main class="col col-center">
+    <div id="boardFrame" class="board-frame">
+      <div id="board" class="board" aria-label="Game board">
+        <!-- 40 tiles are generated by client.js -->
+        <div id="centerStage" class="center-stage">
+          <div id="centerMsg" class="center-msg"></div>
+          <div class="dice-wrap"><div id="dice3d" class="dice-canvas" role="img" aria-label="Dice"></div></div>
+          <div id="diceSum" class="dice-sum" aria-live="polite"></div>
+          <div id="actions" class="actions">
+            <button id="startBtn" class="btn-primary hidden" type="button"><span data-icon="play"></span>Start Game</button>
+            <button id="rollBtn" class="btn-primary hidden" type="button"><span data-icon="dice"></span>Roll dice</button>
+            <button id="buyBtn" class="btn-buy hidden" type="button"></button>
+            <button id="declineBtn" class="btn-soft hidden" type="button"></button>
+            <button id="payJailBtn" class="btn-soft hidden" type="button">Pay $50</button>
+            <button id="jailCardBtn" class="btn-soft hidden" type="button">Use free card</button>
+            <button id="endBtn" class="btn-primary hidden" type="button">End turn</button>
           </div>
-          <div id="diceDisplay" class="dice-display" aria-live="polite">Roll to begin</div>
-          <button id="rollBtn">Roll Dice</button>
-          <button id="buyBtn" class="hidden">Buy Property</button>
-          <button id="declineBtn" class="hidden">Decline</button>
-          <button id="endTurnBtn" class="hidden">End Turn</button>
-          <button id="payJailBtn" class="hidden">Pay $50 to leave Jail</button>
-          <button id="jailCardBtn" class="hidden">Use Jail Free Card</button>
-        </div>
-        <div id="appearanceOverlay" class="appearance-overlay hidden">
-          <div class="appearance-dialog">
-            <h2>Select your player appearance</h2>
-            <div id="appearanceColors" class="appearance-colors">
-              <button class="appearance-color" data-color="#c1dd4b" style="--swatch:#c1dd4b" aria-label="Lime"></button>
-              <button class="appearance-color" data-color="#f8c845" style="--swatch:#f8c845" aria-label="Gold"></button>
-              <button class="appearance-color" data-color="#ff8741" style="--swatch:#ff8741" aria-label="Orange"></button>
-              <button class="appearance-color" data-color="#d84a4c" style="--swatch:#d84a4c" aria-label="Red"></button>
-              <button class="appearance-color" data-color="#54a3e3" style="--swatch:#54a3e3" aria-label="Blue"></button>
-              <button class="appearance-color" data-color="#5dd8df" style="--swatch:#5dd8df" aria-label="Aqua"></button>
-              <button class="appearance-color" data-color="#15aa9a" style="--swatch:#15aa9a" aria-label="Teal"></button>
-              <button class="appearance-color" data-color="#69e153" style="--swatch:#69e153" aria-label="Green"></button>
-              <button class="appearance-color" data-color="#aa7e68" style="--swatch:#aa7e68" aria-label="Brown"></button>
-              <button class="appearance-color" data-color="#db49ab" style="--swatch:#db49ab" aria-label="Magenta"></button>
-              <button class="appearance-color" data-color="#f56e97" style="--swatch:#f56e97" aria-label="Pink"></button>
-              <button class="appearance-color" data-color="#7851dc" style="--swatch:#7851dc" aria-label="Violet"></button>
+          <div id="centerSub" class="center-sub" aria-live="polite"></div>
+
+          <div id="auctionBox" class="auction hidden">
+            <div class="auction-head"><span class="auction-tag">Auction</span><strong id="auctionName"></strong></div>
+            <div class="auction-amount" id="auctionAmount">$0</div>
+            <div class="auction-who" id="auctionWho">No bids yet</div>
+            <div class="auction-turn" id="auctionTurn"></div>
+            <div class="auction-controls">
+              <button class="chip" type="button" data-inc="10">+$10</button>
+              <button class="chip" type="button" data-inc="50">+$50</button>
+              <button class="chip" type="button" data-inc="100">+$100</button>
             </div>
-            <button id="joinGameBtn" class="join-game-button">Ready up <span aria-hidden="true">→</span></button>
-            <div id="appearanceError" class="appearance-error" aria-live="polite"></div>
+            <div class="auction-controls">
+              <input id="bidInput" type="number" min="1" step="1" inputmode="numeric" placeholder="Your bid" aria-label="Your bid" />
+              <button id="bidBtn" class="btn-primary sm" type="button">Bid</button>
+              <button id="auctionPassBtn" class="btn-soft sm" type="button">Pass</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="tokensLayer" class="tokens-layer" aria-hidden="true"></div>
+        <div id="fxLayer" class="fx-layer" aria-hidden="true"></div>
+        <div id="cardLayer" class="card-layer hidden"></div>
+
+        <div id="appearance" class="appearance hidden">
+          <div class="appearance-dialog" role="dialog" aria-labelledby="appearanceTitle">
+            <div class="appearance-preview" aria-hidden="true"><div class="blob big"><i class="eye"><b></b></i><i class="eye"><b></b></i></div></div>
+            <h2 id="appearanceTitle">Select your player appearance:</h2>
+            <div id="swatches" class="swatches"></div>
+            <button id="joinGameBtn" class="btn-primary" type="button">Join game<svg class="arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button>
+            <p id="appearanceError" class="error" role="alert"></p>
           </div>
         </div>
       </div>
-    </main>
+    </div>
+  </main>
 
-    <aside class="sidebar">
-      <div class="panel-block players-panel"><div class="players-panel-head"><div class="panel-heading">Players</div><button id="tradeOpenBtn" type="button">Trade</button></div><div id="players" class="players"></div></div>
-      <div id="tradeOfferPanel" class="panel-block trade-offer-panel hidden" aria-live="polite">
-        <h3 id="tradeOfferTitle">Trade offer</h3>
-        <p id="tradeOfferText"></p>
-        <div class="trade-response-buttons"><button id="acceptTradeBtn" type="button">Accept</button><button id="rejectTradeBtn" type="button">Decline</button><button id="cancelTradeBtn" type="button">Cancel offer</button></div>
-      </div>
-      <div id="auctionArea" class="hidden">
-        <h3>Auction: <span id="auctionSpaceName"></span></h3>
-        <p>Highest bid: $<span id="auctionHighBid">0</span> by <span id="auctionHighBidder">-</span></p>
-        <input id="bidInput" type="number" min="1" placeholder="Your bid" />
-        <button id="bidBtn">Bid</button>
-        <button id="passBtn">Pass</button>
-      </div>
-      <div class="manage panel-block">
-        <h3>Manage Properties</h3>
-        <select id="myPropsSelect"></select>
-        <div class="manage-buttons">
-          <button id="buildBtn">Build House</button>
-          <button id="sellHouseBtn">Sell House</button>
-          <button id="mortgageBtn">Mortgage</button>
-          <button id="unmortgageBtn">Unmortgage</button>
-        </div>
-      </div>
-      <section class="panel-block property-ledger"><div id="propertyLedgerTitle" class="panel-heading">My properties</div><div id="ownedPropertyList" class="owned-property-list"></div></section>
-      <div class="panel-block rules-summary"><div class="panel-heading">Gameplay rules</div><div id="currentRuleList"></div></div>
-      <div id="logPanel" class="log-panel"><div class="panel-heading">Table events</div><div id="log" class="log"></div></div>
-    </aside>
+  <aside class="col col-right">
+    <div id="turnBar" class="turn-bar"></div>
 
-    <aside class="chat-column" aria-label="Chat">
-      <section class="chat panel-block">
-        <div class="panel-heading">Chat</div>
-        <div id="chatMessages" class="chat-messages" aria-live="polite"></div>
-        <div class="chat-input-row"><input id="chatInput" maxlength="250" placeholder="Say something..." aria-label="Chat message"><button id="sendChatBtn" aria-label="Send message">➤</button></div>
-      </section>
-    </aside>
-  </div>
+    <section id="playersPanel" class="panel players-panel">
+      <div class="panel-head"><h2 class="panel-title">Players</h2><span id="playerCount" class="count-pill"></span></div>
+      <div id="players" class="players"></div>
+    </section>
+
+    <section id="tradePanel" class="panel trade-panel hidden" aria-live="polite">
+      <h2 class="panel-title" id="tradeTitle">Trade offer</h2>
+      <p id="tradeText" class="trade-text"></p>
+      <div class="trade-actions">
+        <button id="tradeAccept" class="btn-primary sm" type="button">Accept</button>
+        <button id="tradeReject" class="btn-soft sm" type="button">Decline</button>
+        <button id="tradeCancel" class="btn-soft sm" type="button">Cancel offer</button>
+      </div>
+    </section>
+
+    <section id="settingsPanel" class="panel settings hidden"></section>
+
+    <section id="minePanel" class="panel mine-panel hidden">
+      <div class="panel-head"><h2 class="panel-title" id="mineTitle">Your properties</h2><button id="tradeOpenBtn" class="btn-dark sm" type="button"><span data-icon="swap"></span>Trade</button></div>
+      <div id="mine" class="mine"></div>
+    </section>
+
+    <section id="rulesPanel" class="panel rules-panel hidden">
+      <h2 class="panel-title">Gameplay rules</h2>
+      <div id="ruleChips" class="rule-chips"></div>
+    </section>
+  </aside>
 </div>
 
-<dialog id="tradeDialog" class="trade-dialog" aria-labelledby="tradeDialogTitle">
-  <div class="trade-dialog-head"><div><div class="eyebrow">Negotiation</div><h2 id="tradeDialogTitle">Propose a trade</h2></div><button id="tradeCloseBtn" class="dialog-close" type="button" aria-label="Close">×</button></div>
-  <label class="trade-target-label" for="tradeTarget">Trade with</label>
-  <select id="tradeTarget"></select>
+<!-- ============ Dialogs ============ -->
+<dialog id="propDialog" class="modal prop-dialog" aria-labelledby="propTitle"></dialog>
+
+<dialog id="tradeDialog" class="modal trade-dialog" aria-labelledby="tradeDialogTitle">
+  <div class="modal-head"><h2 id="tradeDialogTitle">Propose a trade</h2><button id="tradeCloseBtn" class="icon-btn" type="button" aria-label="Close" data-icon="close"></button></div>
+  <label class="field-label" for="tradeTarget">Trade with</label>
+  <select id="tradeTarget" class="select"></select>
   <div class="trade-grid">
-    <section class="trade-side"><h3>You offer</h3><label for="tradeFromCash">Cash</label><input id="tradeFromCash" type="number" min="0" step="1" value="0"><div id="tradeFromProps" class="trade-property-list"></div></section>
-    <section class="trade-side"><h3>In return</h3><label for="tradeToCash">Cash</label><input id="tradeToCash" type="number" min="0" step="1" value="0"><div id="tradeToProps" class="trade-property-list"></div></section>
+    <section class="trade-side"><h3>You give</h3><label class="field-label" for="tradeFromCash">Cash</label><input id="tradeFromCash" class="text-input" type="number" min="0" step="1" value="0"><div id="tradeFromProps" class="trade-props"></div></section>
+    <section class="trade-side"><h3>You get</h3><label class="field-label" for="tradeToCash">Cash</label><input id="tradeToCash" class="text-input" type="number" min="0" step="1" value="0"><div id="tradeToProps" class="trade-props"></div></section>
   </div>
-  <p id="tradeDialogError" class="trade-error" aria-live="polite"></p>
-  <div class="trade-dialog-actions"><button id="tradeCancelBtn" type="button">Cancel</button><button id="tradeSendBtn" type="button">Send offer</button></div>
+  <p id="tradeError" class="error" role="alert"></p>
+  <div class="modal-actions"><button id="tradeCancelBtn" class="btn-soft" type="button">Cancel</button><button id="tradeSendBtn" class="btn-primary" type="button">Send offer</button></div>
 </dialog>
 
+<dialog id="roomsDialog" class="modal rooms-dialog" aria-labelledby="roomsTitle">
+  <div class="modal-head"><h2 id="roomsTitle">Open rooms</h2><button id="roomsCloseBtn" class="icon-btn" type="button" aria-label="Close" data-icon="close"></button></div>
+  <div id="roomsList" class="rooms-list"></div>
+  <div class="modal-actions"><button id="roomsRefreshBtn" class="btn-soft" type="button">Refresh</button></div>
+</dialog>
+
+<div id="toasts" class="toasts" aria-live="polite"></div>
+<canvas id="confetti" class="confetti" aria-hidden="true"></canvas>
+
+<div id="gameOver" class="game-over hidden" role="dialog" aria-labelledby="gameOverTitle">
+  <div class="game-over-card">
+    <div class="trophy" aria-hidden="true">🏆</div>
+    <h2 id="gameOverTitle"></h2>
+    <p id="gameOverSub"></p>
+    <button id="gameOverLeave" class="btn-primary" type="button">Back to lobby</button>
+  </div>
+</div>
+
 <script src="/socket.io/socket.io.js"></script>
-<script src="client.js"></script>
+<script type="module" src="/client.js"></script>
 </body>
 </html>

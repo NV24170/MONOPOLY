@@ -1,45 +1,43 @@
 # CCP Monopoly
 
-Real-time multiplayer Monopoly (Node.js + Express + Socket.io). Built to deploy on [Render](https://render.com) as a Web Service.
+Real-time multiplayer Monopoly (Node.js + Express + Socket.io) with a richup.io-style lobby, animated board and a synthesized sound track. Built to deploy on [Render](https://render.com) as a Web Service.
 
 ## Run locally
 ```bash
 npm install
 npm start
 ```
-Then open http://localhost:3000 in multiple tabs to test with several players.
+Open http://localhost:3000. Use several tabs to test with multiple players (each tab is its own player).
 
 ## Deploy to Render
-**Option A — Blueprint (fastest):**
-1. Push this folder to a GitHub repo.
-2. In Render: New → Blueprint → connect the repo. It will read `render.yaml` and configure everything automatically.
-3. Click Deploy.
-
-**Option B — Manual Web Service:**
-1. New → Web Service → connect your repo.
-2. Environment: **Node**
-3. Build Command: `npm install`
-4. Start Command: `npm start`
-5. Render sets `PORT` automatically — the server already reads `process.env.PORT`, so no changes needed.
+**Blueprint (fastest):** push this folder to GitHub, then Render -> New -> Blueprint -> pick the repo. It reads `render.yaml`.
+**Manual:** New -> Web Service, Environment `Node`, Build `npm install`, Start `npm start`. `PORT` is provided by Render.
 
 ## How to play
-1. Everyone opens the deployed URL.
-2. Enter a name and the same room code to join together.
-3. Once 2+ players have joined, anyone can click **Start Game**.
-4. Roll dice, buy properties, build houses/hotels, mortgage, and trade — turns advance automatically, doubles roll again, three doubles sends you to jail.
+1. Enter a name and press **Play** (joins/creates a public room), or **Create a private game** and share the invite link (`/room/<code>`).
+2. Everyone picks an appearance colour and presses **Join game**.
+3. The host tweaks settings (max players, private room, bots, starting cash, rules) and presses **Start Game**.
+4. Roll, buy, build, trade, mortgage. Doubles roll again; three doubles = prison.
 
-## What's implemented
-- Full 40-space board, all rents (properties, railroads, utilities), houses/hotels with even-building rule
-- Buying, auctions on decline (toggleable), mortgage/unmortgage
-- Jail (pay/roll doubles/use card, 3-doubles rule)
-- Chance & Community Chest (all 32 official cards)
-- Bankruptcy (to a player or to the bank) and win detection
-- Player-to-player trade proposals with cash and property offers, recipient acceptance/rejection, cancellation, and server-side validation
-- Toggleable rules: auction-on-decline, vacation cash (Free Parking pot), x2 rent on unimproved monopolies, rent-free while in jail
+## Highlights
+- Landing page, room browser ("All rooms"), private rooms, invite links, host-only settings.
+- Bots (beta) fill empty seats, and give their seat up to humans who join.
+- Refresh-safe: a reload or brief network drop returns you to your seat (seats are held 15s in the lobby, 60s in a running game).
+- Animations for every play: 3D dice, token hopping tile by tile (flying to prison, walking back), card flips, coins flying on rent, floating +/- cash, property purchase bursts, house/hotel pop-ins, mortgage/tax shakes, bankruptcies, auction, and a winner celebration with confetti.
+- Sound effects generated with WebAudio (toggle in the top bar); `prefers-reduced-motion` is respected.
+- Rules: 40-space board, all 32 cards, even-build (toggle), mortgages (toggle), auctions (toggle), vacation cash, x2 rent on full sets, no rent while owner is in prison, trading with server-side validation.
 
-## Known simplifications / next steps
-- No reconnect/resume-session handling — a page refresh drops you from the room (add player tokens + localStorage session id to fix)
-- No spectator mode or room persistence across server restarts (in-memory only — fine for a single Render instance, but a restart clears active games)
+## Project layout
+```
+server.js        Express + Socket.io (rooms, host controls, reconnect, /rooms)
+game/Game.js     Rules engine (emits animation events with every action)
+game/board.js    Board and cards
+game/bots.js     Bot player driver
+public/          index.html, styles.css, client.js (state + animation queue),
+                 panels.js, board-view.js, store.js, sfx.js, ui-assets.js, dice3d.js
+test/            node --test
+```
 
-## Game Link
-https://monopoly-app-zel6.onrender.com
+## Notes
+- Rooms are in memory: a server restart clears active games (fine for one Render instance).
+- Tests: `npm test`.

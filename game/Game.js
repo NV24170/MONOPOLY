@@ -26,25 +26,116 @@ class Game {
     this.pendingAuction = null; // { spaceId, highestBid, highestBidder, order, currentBidderIdx, passed:Set }
     this.pendingTrade = null;
     this.freeParkingPot = 0;
+    this.hostId = null;
+    this.events = []; // animation events for clients: { seq, type, ... }
+    this.eventSeq = 0;
+    this.logSeq = 0;
+    this.settings = { maxPlayers: 4, isPrivate: false, allowBots: false, startingCash: 1500, randomOrder: false };
     this.rules = {
       auctionOnDecline: true,
       vacationCash: false,
       doubleRentOnMonopoly: true,
       rentFreeInJail: false,
+      mortgage: true,
+      evenBuild: true,
     };
   }
 
-  addPlayer(id, name, socketId) {
+  emit(type, data = {}) {
+    this.events.push({ seq: ++this.eventSeq, type, ...data });
+    if (this.events.length > 80) this.events.shift();
+  }
+
+  // Defaults used when a room is created from the lobby (matches richup.io's defaults).
+  applyRoomDefaults({ isPrivate = false } = {}) {
+    this.settings.isPrivate = isPrivate;
+    Object.assign(this.rules, {
+      auctionOnDecline: false, vacationCash: false, doubleRentOnMonopoly: false,
+      rentFreeInJail: false, mortgage: false, evenBuild: true,
+    });
+  }
+
+  firstFreeColor() {
+    const used = new Set(this.players.filter(p => !p.bankrupt).map(p => p.color));
+    return PLAYER_COLORS.find(c => !used.has(c)) || PLAYER_COLORS[0];
+  }
+
+  addPlayer(id, name, socketId, opts = {}) {
     if (this.started) return { error: "Game already started" };
-    if (this.players.length >= 6) return { error: "Room full" };
+    if (this.players.length >= this.settings.maxPlayers) {
+      // A bot gives up its seat to a human.
+      const bot = this.players.find(p => p.bot);
+      if (!bot || opts.bot) return { error: "Room full" };
+      this.players = this.players.filter(p => p !== bot);
+    }
     this.players.push({
       id, name, socketId,
       position: 0, cash: 1500, properties: [],
-      color: PLAYER_COLORS[this.players.length % PLAYER_COLORS.length], ready: false,
+      color: this.firstFreeColor(), ready: !!opts.bot, bot: !!opts.bot, connected: true,
       inJail: false, jailTurns: 0, doublesCount: 0,
       jailCards: 0, bankrupt: false,
     });
-    this.addLog(`${name} joined the game.`);
+    if (!this.hostId && !opts.bot) this.hostId = id;
+    this.addLog(`${name} joined the room.`);
+    return { ok: true };
+  }
+
+  humanPlayers() { return this.players.filter(p => !p.bot); }
+
+  addBot() {
+    const names = ["Ada", "Turing", "Grace", "Linus", "Hedy", "Ken", "Radia", "Dennis"];
+    const taken = new Set(this.players.map(p => p.name));
+    const name = "Bot " + (names.find(n => !taken.has("Bot " + n)) || this.players.length);
+    const id = "bot-" + Math.random().toString(36).slice(2, 8);
+    return this.addPlayer(id, name, null, { bot: true });
+  }
+
+  syncBots() {
+    if (this.started) return;
+    if (this.settings.allowBots) {
+      while (this.players.length < this.settings.maxPlayers) {
+        if (this.addBot().error) break;
+      }
+    } else {
+      this.players = this.players.filter(p => !p.bot);
+    }
+  }
+
+  updateSettings({ settings = {}, rules = {} } = {}) {
+    if (this.started) return { error: "Settings cannot be changed after the game starts" };
+    if (!settings || typeof settings !== "object" || !rules || typeof rules !== "object") return { error: "Settings are invalid" };
+    const next = {};
+    if ("maxPlayers" in settings) {
+      const n = settings.maxPlayers;
+      if (!Number.isInteger(n) || n < 2 || n > 8) return { error: "Max players must be between 2 and 8" };
+      if (n < this.humanPlayers().length) return { error: "There are already more players in the room" };
+      next.maxPlayers = n;
+    }
+    if ("startingCash" in settings) {
+      if (![500, 1000, 1500, 2000, 2500, 3000].includes(settings.startingCash)) return { error: "Invalid starting cash" };
+      next.startingCash = settings.startingCash;
+    }
+    for (const key of ["isPrivate", "allowBots", "randomOrder"]) {
+      if (key in settings) {
+        if (typeof settings[key] !== "boolean") return { error: "Settings are invalid" };
+        next[key] = settings[key];
+      }
+    }
+    const nextRules = {};
+    for (const key of Object.keys(this.rules)) {
+      if (key in rules && typeof rules[key] === "boolean") nextRules[key] = rules[key];
+    }
+    Object.assign(this.settings, next);
+    Object.assign(this.rules, nextRules);
+    if ("maxPlayers" in next || "allowBots" in next) {
+      // Drop surplus bots if seats were removed, then refill/clear bots.
+      while (this.players.length > this.settings.maxPlayers) {
+        const bot = [...this.players].reverse().find(p => p.bot);
+        if (!bot) break;
+        this.players = this.players.filter(p => p !== bot);
+      }
+      this.syncBots();
+    }
     return { ok: true };
   }
 
@@ -58,9 +149,16 @@ class Game {
     if (!p) return;
     if (this.started) {
       this.removeAuctionPlayer(id);
+      const wasCurrent = this.currentPlayer()?.id === id;
       this.declareBankruptcy(p, null);
+      if (wasCurrent && this.phase !== "gameover") {
+        this.phase = "preroll";
+        this.endTurn();
+      }
     } else {
       this.players = this.players.filter(pl => pl.id !== id);
+      if (this.hostId === id) this.hostId = this.humanPlayers()[0]?.id || null;
+      if (this.settings.allowBots) this.syncBots();
     }
   }
 
@@ -82,7 +180,7 @@ class Game {
   }
 
   addLog(msg) {
-    this.log.push({ msg, t: Date.now() });
+    this.log.push({ id: ++this.logSeq, msg, t: Date.now() });
     if (this.log.length > 200) this.log.shift();
   }
 
@@ -92,13 +190,34 @@ class Game {
     if (this.players.some(player => !player.ready)) return { error: "Everyone must choose an appearance first" };
     this.started = true;
     this.phase = "preroll";
+    if (this.settings.randomOrder) this.players = shuffle(this.players);
+    this.players.forEach(player => { player.cash = this.settings.startingCash; });
     this.turnIndex = 0;
     this.addLog("Game started. " + this.currentPlayer().name + "'s turn.");
+    this.emit("start");
+    this.emit("turn", { playerId: this.currentPlayer().id });
     return { ok: true };
   }
 
   // ---- Turn / dice ----
+  // If the player whose turn it is just went bankrupt, the turn must move on;
+  // otherwise the table would wait forever for someone who can no longer act.
+  settleTurn() {
+    if (!this.started || this.phase === "gameover" || this.pendingAuction) return;
+    const current = this.currentPlayer();
+    if (current && current.bankrupt) {
+      this.phase = "postroll";
+      this.endTurn();
+    }
+  }
+
   rollDice(playerId) {
+    const result = this.performRoll(playerId);
+    this.settleTurn();
+    return result;
+  }
+
+  performRoll(playerId) {
     const player = this.currentPlayer();
     if (!player || player.id !== playerId) return { error: "Not your turn" };
     if (this.phase !== "preroll" && this.phase !== "jail") return { error: "Cannot roll now" };
@@ -108,6 +227,7 @@ class Game {
     const isDouble = d1 === d2;
     this.lastRoll = [d1, d2];
     this.rollSequence++;
+    this.emit("roll", { playerId, dice: [d1, d2], double: isDouble });
 
     if (player.inJail) {
       return this.handleJailRoll(player, d1, d2, isDouble);
@@ -166,6 +286,7 @@ class Game {
     player.inJail = false;
     player.jailTurns = 0;
     this.addLog(`${player.name} paid $50 to leave Jail.`);
+    this.emit("free", { playerId, how: "fine" });
     this.phase = "preroll";
     return { ok: true };
   }
@@ -179,6 +300,7 @@ class Game {
     player.inJail = false;
     player.jailTurns = 0;
     this.addLog(`${player.name} used a Get Out of Jail Free card.`);
+    this.emit("free", { playerId, how: "card" });
     this.phase = "preroll";
     return { ok: true };
   }
@@ -186,17 +308,22 @@ class Game {
   movePlayer(player, spaces) {
     const prev = player.position;
     player.position = (player.position + spaces) % 40;
-    if (player.position < prev) {
+    const passedGo = player.position < prev;
+    this.emit("move", { playerId: player.id, from: prev, to: player.position, mode: "walk", passedGo });
+    if (passedGo) {
       player.cash += 200;
       this.addLog(`${player.name} passed START and collected $200.`);
     }
   }
 
   sendToJail(player) {
+    const from = player.position;
     player.position = 10;
     player.inJail = true;
     player.jailTurns = 0;
     player.doublesCount = 0;
+    this.emit("move", { playerId: player.id, from, to: 10, mode: "jump", passedGo: false });
+    this.emit("jail", { playerId: player.id });
   }
 
   resolveLanding(player) {
@@ -214,6 +341,7 @@ class Game {
         player.cash -= space.amount;
         this.freeParkingPot += space.amount;
         this.addLog(`${player.name} paid $${space.amount} tax.`);
+        this.emit("tax", { playerId: player.id, amount: space.amount, spaceId: space.id });
         this.phase = "postroll";
         const bankrupt = this.checkBankruptOnDebt(player, space.amount, null);
         return { space, event: "tax_paid", bankrupt };
@@ -222,7 +350,7 @@ class Game {
       case "chance":
       case "community_chest": {
         const turnIndex = this.turnIndex;
-        const card = this.drawCard(space.type);
+        const card = this.drawCard(space.type, player);
         const outcome = this.applyCard(player, card);
         if (outcome.type === "goto_jail" && this.turnIndex === turnIndex) {
           this.phase = "preroll";
@@ -237,6 +365,7 @@ class Game {
         if (this.rules.vacationCash && this.freeParkingPot > 0) {
           player.cash += this.freeParkingPot;
           this.addLog(`${player.name} collected $${this.freeParkingPot} from Vacation.`);
+          this.emit("vacation", { playerId: player.id, amount: this.freeParkingPot });
           this.freeParkingPot = 0;
         }
         this.phase = "postroll";
@@ -271,6 +400,7 @@ class Game {
         player.cash -= rent;
         owner.cash += rent;
         this.addLog(`${player.name} paid $${rent} rent to ${owner.name}.`);
+        this.emit("rent", { fromId: player.id, toId: owner.id, amount: rent, spaceId: space.id });
         this.phase = "postroll";
         const bankrupt = this.checkBankruptOnDebt(player, rent, owner);
         return { space, event: "rent_paid", rent, owner: owner.id, bankrupt };
@@ -308,10 +438,11 @@ class Game {
     return space.rent[0];
   }
 
-  drawCard(type) {
+  drawCard(type, player = null) {
     const deck = type === "chance" ? this.chanceDeck : this.chestDeck;
     const card = deck.shift();
     deck.push(card); // recycle to bottom
+    this.emit("card", { playerId: player?.id || null, deck: type, text: card.text });
     return card;
   }
 
@@ -319,28 +450,40 @@ class Game {
     switch (card.action) {
       case "collect":
         player.cash += card.amount;
+        this.emit("cash", { playerId: player.id, amount: card.amount });
         return { type: "collect", amount: card.amount };
       case "pay":
         player.cash -= card.amount;
+        this.emit("cash", { playerId: player.id, amount: -card.amount });
         this.checkBankruptOnDebt(player, card.amount, null);
         return { type: "pay", amount: card.amount };
-      case "collect_each":
+      case "collect_each": {
+        let total = 0;
         for (const other of this.activePlayers()) {
           if (other.id === player.id) continue;
           other.cash -= card.amount;
           player.cash += card.amount;
+          total += card.amount;
+          this.emit("cash", { playerId: other.id, amount: -card.amount });
           this.checkBankruptOnDebt(other, card.amount, player);
         }
+        if (total) this.emit("cash", { playerId: player.id, amount: total });
         return { type: "collect_each", amount: card.amount };
-      case "pay_each":
+      }
+      case "pay_each": {
+        let total = 0;
         for (const other of this.activePlayers()) {
           if (other.id === player.id) continue;
           player.cash -= card.amount;
           other.cash += card.amount;
+          total += card.amount;
+          this.emit("cash", { playerId: other.id, amount: card.amount });
           this.checkBankruptOnDebt(player, card.amount, other);
           if (player.bankrupt) break;
         }
+        if (total) this.emit("cash", { playerId: player.id, amount: -total });
         return { type: "pay_each", amount: card.amount };
+      }
       case "jail_free":
         player.jailCards++;
         return { type: "jail_free" };
@@ -350,7 +493,9 @@ class Game {
       case "goto": {
         const prev = player.position;
         player.position = card.target;
-        if (card.collectGo && (card.target < prev || card.target === 0)) player.cash += 200;
+        const collected = card.collectGo && (card.target < prev || card.target === 0);
+        this.emit("move", { playerId: player.id, from: prev, to: card.target, mode: prev === card.target ? "jump" : "walk", passedGo: !!collected });
+        if (collected) player.cash += 200;
         const landing = this.resolveLanding(player);
         return { type: "goto", target: card.target, landing };
       }
@@ -360,6 +505,7 @@ class Game {
         if (target === undefined) target = candidates[0];
         const prev = player.position;
         player.position = target;
+        this.emit("move", { playerId: player.id, from: prev, to: target, mode: "walk", passedGo: target < prev });
         if (target < prev) player.cash += 200;
         // special: if unowned, buy price normal; if owned, rent x multiplier of dice
         const space = BOARD[target];
@@ -372,6 +518,8 @@ class Game {
           const owner = this.getPlayer(owned.ownerId);
           player.cash -= rent;
           owner.cash += rent;
+          this.addLog(`${player.name} paid $${rent} rent to ${owner.name}.`);
+          this.emit("rent", { fromId: player.id, toId: owner.id, amount: rent, spaceId: target });
           this.checkBankruptOnDebt(player, rent, owner);
           return { type: "goto_nearest", target, rentPaid: rent };
         }
@@ -382,6 +530,7 @@ class Game {
       case "move_relative": {
         const prev = player.position;
         player.position = (prev + card.amount + 40) % 40;
+        this.emit("move", { playerId: player.id, from: prev, to: player.position, mode: card.amount < 0 ? "back" : "walk", passedGo: false });
         const landing = this.resolveLanding(player);
         return { type: "move_relative", landing };
       }
@@ -393,6 +542,7 @@ class Game {
           else total += (o.houses || 0) * card.house;
         });
         player.cash -= total;
+        if (total) this.emit("cash", { playerId: player.id, amount: -total });
         this.checkBankruptOnDebt(player, total, null);
         return { type: "repairs", amount: total };
       }
@@ -411,6 +561,7 @@ class Game {
     player.properties.push(space.id);
     this.ownership[space.id] = { ownerId: player.id, houses: 0, hotel: false, mortgaged: false };
     this.addLog(`${player.name} bought ${space.name} for $${space.price}.`);
+    this.emit("buy", { playerId: player.id, spaceId: space.id, price: space.price });
     this.phase = "postroll";
     return { ok: true, space };
   }
@@ -511,6 +662,7 @@ class Game {
       winner.properties.push(space.id);
       this.ownership[space.id] = { ownerId: winner.id, houses: 0, hotel: false, mortgaged: false };
       this.addLog(`${winner.name} won the auction for ${space.name} at $${a.highestBid}.`);
+      this.emit("buy", { playerId: winner.id, spaceId: space.id, price: a.highestBid, auction: true });
     } else {
       this.addLog(`No bids — ${space.name} remains unowned.`);
     }
@@ -532,7 +684,7 @@ class Game {
     if (owned.hotel) return { error: "Already has a hotel" };
     const buildingLevel = property => property.hotel ? 5 : property.houses;
     const minHouses = Math.min(...groupSpaces.map(s => buildingLevel(this.ownership[s.id])));
-    if (buildingLevel(owned) > minHouses) return { error: "Must build evenly across the group" };
+    if (this.rules.evenBuild && buildingLevel(owned) > minHouses) return { error: "Must build evenly across the group" };
     if (player.cash < space.houseCost) return { error: "Not enough cash" };
     player.cash -= space.houseCost;
     if (owned.houses === 4) {
@@ -543,6 +695,7 @@ class Game {
       owned.houses++;
       this.addLog(`${player.name} built a house on ${space.name} (${owned.houses}).`);
     }
+    this.emit("build", { playerId, spaceId, houses: owned.houses, hotel: owned.hotel });
     return { ok: true };
   }
 
@@ -555,21 +708,23 @@ class Game {
     const groupSpaces = BOARD.filter(s => s.group === space.group);
     if (owned.hotel) {
       const levelsAfterSale = groupSpaces.map(s => s.id === spaceId ? 4 : this.ownership[s.id].hotel ? 5 : this.ownership[s.id].houses);
-      if (Math.max(...levelsAfterSale) - Math.min(...levelsAfterSale) > 1) return { error: "Must sell evenly across the group" };
+      if (this.rules.evenBuild && Math.max(...levelsAfterSale) - Math.min(...levelsAfterSale) > 1) return { error: "Must sell evenly across the group" };
       owned.hotel = false;
       owned.houses = 4;
       player.cash += Math.floor(space.houseCost / 2);
       this.addLog(`${player.name} sold the hotel on ${space.name}.`);
+      this.emit("sell", { playerId, spaceId, houses: owned.houses, hotel: false });
       return { ok: true };
     }
     if (owned.houses === 0) return { error: "No buildings to sell" };
     const maxOthers = Math.max(...groupSpaces.filter(s => s.id !== spaceId).map(s => this.ownership[s.id].hotel ? 5 : this.ownership[s.id].houses));
-    if (owned.houses < maxOthers) return { error: "Must sell evenly across the group" };
+    if (this.rules.evenBuild && owned.houses < maxOthers) return { error: "Must sell evenly across the group" };
     const levelsAfterSale = groupSpaces.map(s => s.id === spaceId ? owned.houses - 1 : this.ownership[s.id].hotel ? 5 : this.ownership[s.id].houses);
-    if (Math.max(...levelsAfterSale) - Math.min(...levelsAfterSale) > 1) return { error: "Must sell evenly across the group" };
+    if (this.rules.evenBuild && Math.max(...levelsAfterSale) - Math.min(...levelsAfterSale) > 1) return { error: "Must sell evenly across the group" };
     owned.houses--;
     player.cash += Math.floor(space.houseCost / 2);
     this.addLog(`${player.name} sold a house on ${space.name}.`);
+    this.emit("sell", { playerId, spaceId, houses: owned.houses, hotel: false });
     return { ok: true };
   }
 
@@ -577,6 +732,7 @@ class Game {
     const owned = this.ownership[spaceId];
     const space = BOARD[spaceId];
     if (!owned || owned.ownerId !== playerId) return { error: "You don't own this" };
+    if (!this.rules.mortgage) return { error: "Mortgages are turned off in this game" };
     if (space.type === "property" && BOARD.some(s => s.group === space.group && (this.ownership[s.id]?.houses > 0 || this.ownership[s.id]?.hotel))) {
       return { error: "Sell all buildings in the color group first" };
     }
@@ -584,6 +740,7 @@ class Game {
     owned.mortgaged = true;
     this.getPlayer(playerId).cash += space.mortgage;
     this.addLog(`${this.getPlayer(playerId).name} mortgaged ${space.name}.`);
+    this.emit("mortgage", { playerId, spaceId, mortgaged: true });
     return { ok: true };
   }
 
@@ -592,12 +749,14 @@ class Game {
     const space = BOARD[spaceId];
     const player = this.getPlayer(playerId);
     if (!owned || owned.ownerId !== playerId) return { error: "You don't own this" };
+    if (!this.rules.mortgage) return { error: "Mortgages are turned off in this game" };
     if (!owned.mortgaged) return { error: "Not mortgaged" };
     const cost = Math.ceil(space.mortgage * 1.1);
     if (player.cash < cost) return { error: "Not enough cash" };
     player.cash -= cost;
     owned.mortgaged = false;
     this.addLog(`${player.name} unmortgaged ${space.name} for $${cost}.`);
+    this.emit("mortgage", { playerId, spaceId, mortgaged: false });
     return { ok: true };
   }
 
@@ -678,6 +837,7 @@ class Game {
     });
     this.pendingTrade = null;
     this.addLog(`${from.name} and ${to.name} completed a trade.`);
+    this.emit("trade", { fromId: from.id, toId: to.id });
     return { ok: true, accepted: true };
   }
 
@@ -706,6 +866,7 @@ class Game {
       this.pendingTrade = null;
     }
     this.addLog(`${player.name} has gone bankrupt!`);
+    this.emit("bankrupt", { playerId: player.id, creditorId: creditor?.id || null });
     if (creditor) {
       creditor.cash += Math.max(player.cash, 0);
       player.properties.forEach(id => {
@@ -723,6 +884,7 @@ class Game {
     if (remaining.length <= 1) {
       this.phase = "gameover";
       this.addLog(remaining.length ? `${remaining[0].name} wins the game!` : "The game ended with no remaining players.");
+      if (remaining.length) this.emit("win", { playerId: remaining[0].id });
     }
   }
 
@@ -739,6 +901,7 @@ class Game {
       player.doublesCount = player.doublesCount; // keep count for 3-in-a-row tracking
       this.phase = "preroll";
       this.addLog(`${player.name} rolled doubles and goes again.`);
+      this.emit("turn", { playerId: player.id, again: true });
       return { ok: true, goAgain: true };
     }
     if (player) player.doublesCount = 0;
@@ -747,6 +910,7 @@ class Game {
     } while (this.players[this.turnIndex].bankrupt);
     this.phase = "preroll";
     this.addLog(`${this.currentPlayer().name}'s turn.`);
+    this.emit("turn", { playerId: this.currentPlayer().id });
     return { ok: true };
   }
 
@@ -758,7 +922,7 @@ class Game {
       phase: this.phase,
       players: this.players.map(p => ({
         id: p.id, name: p.name, position: p.position, cash: p.cash,
-        color: p.color, ready: p.ready,
+        color: p.color, ready: p.ready, bot: !!p.bot, connected: p.connected !== false,
         properties: p.properties, inJail: p.inJail, jailTurns: p.jailTurns,
         jailCards: p.jailCards, bankrupt: p.bankrupt,
       })),
@@ -767,8 +931,13 @@ class Game {
       currentPlayerId: this.players[this.turnIndex] ? this.players[this.turnIndex].id : null,
       lastRoll: this.lastRoll,
       rollSequence: this.rollSequence,
-      log: this.log.slice(-30),
-      pendingAuction: this.pendingAuction,
+      log: this.log.slice(-40),
+      events: this.events.slice(-40),
+      hostId: this.hostId,
+      settings: this.settings,
+      pendingAuction: this.pendingAuction
+        ? { ...this.pendingAuction, passed: [...this.pendingAuction.passed] }
+        : null,
       pendingTrade: this.pendingTrade ? {
         fromId: this.pendingTrade.fromId,
         toId: this.pendingTrade.toId,
