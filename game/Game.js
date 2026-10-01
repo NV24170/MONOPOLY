@@ -25,6 +25,8 @@ class Game {
     this.rollSequence = 0;
     this.pendingAuction = null; // { spaceId, highestBid, highestBidder, order, currentBidderIdx, passed:Set }
     this.pendingTrade = null;
+    this.pendingDebt = null;
+    this.pendingDebtQueue = [];
     this.freeParkingPot = 0;
     this.hostId = null;
     this.events = []; // animation events for clients: { seq, type, ... }
@@ -150,8 +152,9 @@ class Game {
     if (this.started) {
       this.removeAuctionPlayer(id);
       const wasCurrent = this.currentPlayer()?.id === id;
+      this.removePendingDebtsFor(id);
       this.declareBankruptcy(p, null);
-      if (wasCurrent && this.phase !== "gameover") {
+      if (wasCurrent && this.phase !== "gameover" && !this.pendingDebt) {
         this.phase = "preroll";
         this.endTurn();
       }
@@ -203,7 +206,7 @@ class Game {
   // If the player whose turn it is just went bankrupt, the turn must move on;
   // otherwise the table would wait forever for someone who can no longer act.
   settleTurn() {
-    if (!this.started || this.phase === "gameover" || this.pendingAuction) return;
+    if (!this.started || this.phase === "gameover" || this.pendingAuction || this.pendingDebt) return;
     const current = this.currentPlayer();
     if (current && current.bankrupt) {
       this.phase = "postroll";
@@ -281,7 +284,13 @@ class Game {
   payJailFine(playerId) {
     const player = this.currentPlayer();
     if (!player || player.id !== playerId || !player.inJail) return { error: "Cannot pay fine now" };
-    if (player.cash < 50) return { error: "Not enough cash to pay the fine" };
+    if (player.cash < 50) {
+      player.cash -= 50;
+      this.checkBankruptOnDebt(player, 50, null);
+      const debt = [this.pendingDebt, ...this.pendingDebtQueue].find(item => item?.playerId === playerId);
+      if (debt) debt.continuation = "leave_jail";
+      return { ok: true, pendingDebt: true };
+    }
     player.cash -= 50;
     player.inJail = false;
     player.jailTurns = 0;
@@ -352,7 +361,11 @@ class Game {
         const turnIndex = this.turnIndex;
         const card = this.drawCard(space.type, player);
         const outcome = this.applyCard(player, card);
-        if (outcome.type === "goto_jail" && this.turnIndex === turnIndex) {
+        if (this.pendingDebt) {
+          this.pendingDebt.resumePhase = "postroll";
+          this.pendingDebtQueue.forEach(debt => { debt.resumePhase = "postroll"; });
+          this.phase = "debt";
+        } else if (outcome.type === "goto_jail" && this.turnIndex === turnIndex) {
           this.phase = "preroll";
           this.endTurn();
         } else if (this.turnIndex === turnIndex && this.phase !== "awaiting_buy" && this.phase !== "gameover") {
@@ -714,6 +727,7 @@ class Game {
       player.cash += Math.floor(space.houseCost / 2);
       this.addLog(`${player.name} sold the hotel on ${space.name}.`);
       this.emit("sell", { playerId, spaceId, houses: owned.houses, hotel: false });
+      this.resolveDebtIfCovered(player);
       return { ok: true };
     }
     if (owned.houses === 0) return { error: "No buildings to sell" };
@@ -725,7 +739,28 @@ class Game {
     player.cash += Math.floor(space.houseCost / 2);
     this.addLog(`${player.name} sold a house on ${space.name}.`);
     this.emit("sell", { playerId, spaceId, houses: owned.houses, hotel: false });
+    this.resolveDebtIfCovered(player);
     return { ok: true };
+  }
+
+  sellProperty(playerId, spaceId) {
+    const player = this.getPlayer(playerId);
+    const space = BOARD[spaceId];
+    const owned = this.ownership[spaceId];
+    if (!player || !space || !owned || owned.ownerId !== playerId) return { error: "You don't own this property" };
+    if (this.pendingDebt?.playerId !== playerId) return { error: "You can only sell properties while resolving a debt" };
+    if (owned.mortgaged) return { error: "This property is already mortgaged" };
+    if (space.group && BOARD.some(s => s.group === space.group && (this.ownership[s.id]?.houses > 0 || this.ownership[s.id]?.hotel))) {
+      return { error: "Sell all buildings in the color group first" };
+    }
+    const proceeds = space.mortgage || Math.floor(space.price / 2);
+    player.cash += proceeds;
+    player.properties = player.properties.filter(id => id !== spaceId);
+    delete this.ownership[spaceId];
+    this.addLog(`${player.name} sold ${space.name} back to the bank for $${proceeds}.`);
+    this.emit("sell", { playerId, spaceId, proceeds, deed: true });
+    this.resolveDebtIfCovered(player);
+    return { ok: true, proceeds };
   }
 
   mortgageProperty(playerId, spaceId) {
@@ -741,6 +776,7 @@ class Game {
     this.getPlayer(playerId).cash += space.mortgage;
     this.addLog(`${this.getPlayer(playerId).name} mortgaged ${space.name}.`);
     this.emit("mortgage", { playerId, spaceId, mortgaged: true });
+    this.resolveDebtIfCovered(this.getPlayer(playerId));
     return { ok: true };
   }
 
@@ -836,6 +872,8 @@ class Game {
       from.properties.push(id);
     });
     this.pendingTrade = null;
+    this.resolveDebtIfCovered(from);
+    this.resolveDebtIfCovered(to);
     this.addLog(`${from.name} and ${to.name} completed a trade.`);
     this.emit("trade", { fromId: from.id, toId: to.id });
     return { ok: true, accepted: true };
@@ -851,13 +889,89 @@ class Game {
   // ---- Bankruptcy ----
   checkBankruptOnDebt(player, amount, creditor) {
     if (player.cash >= 0) return false;
-    // try raising cash via mortgages/selling houses is left to the player UI before this point;
-    // if still negative, declare bankruptcy
-    if (player.cash < 0) {
-      this.declareBankruptcy(player, creditor);
+    const queued = [this.pendingDebt, ...this.pendingDebtQueue].find(debt => debt?.playerId === player.id);
+    if (queued) {
+      queued.amount += amount;
+      if (!queued.creditorId && creditor) queued.creditorId = creditor.id;
       return true;
     }
-    return false;
+    const debt = {
+      playerId: player.id,
+      amount,
+      creditorId: creditor?.id || null,
+      resumePhase: this.phase === "debt" ? "postroll" : this.phase,
+    };
+    if (!this.pendingDebt) {
+      this.pendingDebt = debt;
+      this.phase = "debt";
+    } else {
+      this.pendingDebtQueue.push(debt);
+    }
+    this.addLog(`${player.name} is short $${Math.abs(player.cash)} and must raise cash or declare bankruptcy.`);
+    return true;
+  }
+
+  resolveDebtIfCovered(player) {
+    if (this.pendingDebt?.playerId === player?.id && player.cash >= 0) {
+      return this.resolvePendingDebt(player.id);
+    }
+    return { ok: true };
+  }
+
+  resolvePendingDebt(playerId) {
+    let debt = this.pendingDebt;
+    const player = this.getPlayer(playerId);
+    if (!debt || debt.playerId !== playerId || !player) return { error: "You have no debt to resolve" };
+    if (player.cash < 0) return { error: `You still need $${Math.abs(player.cash)} to pay this debt` };
+    this.addLog(`${player.name} raised enough cash to pay the debt.`);
+    this.completeDebtContinuation(debt);
+    while ((this.pendingDebt = this.pendingDebtQueue.shift() || null)) {
+      const nextPlayer = this.getPlayer(this.pendingDebt.playerId);
+      if (!nextPlayer || nextPlayer.cash < 0) break;
+      this.addLog(`${nextPlayer.name} already has enough cash to pay the debt.`);
+      debt = this.pendingDebt;
+      this.completeDebtContinuation(debt);
+    }
+    if (this.pendingDebt) this.phase = "debt";
+    else this.phase = debt.resumePhase === "debt" ? "postroll" : debt.resumePhase;
+    this.settleTurn();
+    return { ok: true };
+  }
+
+  completeDebtContinuation(debt) {
+    if (debt.continuation !== "leave_jail") return;
+    const player = this.getPlayer(debt.playerId);
+    if (!player || player.bankrupt) return;
+    player.inJail = false;
+    player.jailTurns = 0;
+    this.addLog(`${player.name} paid $50 to leave Jail.`);
+    this.emit("free", { playerId: player.id, how: "fine" });
+  }
+
+  removePendingDebtsFor(playerId) {
+    if (this.pendingDebt?.playerId === playerId) {
+      const debt = this.pendingDebt;
+      this.pendingDebt = this.pendingDebtQueue.shift() || null;
+      if (this.pendingDebt) this.phase = "debt";
+      else this.phase = debt.resumePhase === "debt" ? "postroll" : debt.resumePhase;
+    }
+    this.pendingDebtQueue = this.pendingDebtQueue.filter(debt => debt.playerId !== playerId);
+  }
+
+  declarePendingBankruptcy(playerId) {
+    const debt = this.pendingDebt;
+    const player = this.getPlayer(playerId);
+    if (!debt || debt.playerId !== playerId || !player) return { error: "You have no debt to resolve" };
+    this.pendingDebt = null;
+    this.declareBankruptcy(player, this.getPlayer(debt.creditorId));
+    if (this.phase !== "gameover") {
+      this.pendingDebt = this.pendingDebtQueue.shift() || null;
+      this.phase = this.pendingDebt ? "debt" : debt.resumePhase === "debt" ? "postroll" : debt.resumePhase;
+      this.settleTurn();
+    } else {
+      this.pendingDebtQueue = [];
+    }
+    return { ok: true };
   }
 
   declareBankruptcy(player, creditor) {
@@ -890,6 +1004,7 @@ class Game {
 
   // ---- Turn management ----
   endTurn(playerId) {
+    if (this.pendingDebt) return { error: "Resolve outstanding debt first" };
     if (playerId && this.phase !== "postroll") return { error: "Cannot end turn now" };
     if (playerId && (!this.currentPlayer() || this.currentPlayer().id !== playerId)) {
       return { error: "Not your turn" };
@@ -920,6 +1035,7 @@ class Game {
       roomId: this.roomId,
       started: this.started,
       phase: this.phase,
+      pendingDebt: this.pendingDebt,
       players: this.players.map(p => ({
         id: p.id, name: p.name, position: p.position, cash: p.cash,
         color: p.color, ready: p.ready, bot: !!p.bot, connected: p.connected !== false,

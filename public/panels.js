@@ -171,19 +171,22 @@ export function renderMine() {
   const player = me();
   const list = $("mine");
   const props = player ? [...player.properties].sort((a, b) => a - b) : [];
-  const sig = JSON.stringify([props.map((id) => [id, s.ownership[id]]), s.pendingTrade, s.players.length]);
+  const debt = s.pendingDebt?.playerId === S.myId ? s.pendingDebt : null;
+  const sig = JSON.stringify([props.map((id) => [id, s.ownership[id]]), s.pendingTrade, s.pendingDebt, s.players.length]);
   $("mineTitle").textContent = `Your properties${props.length ? ` (${props.length})` : ""}`;
   $("tradeOpenBtn").disabled = !!s.pendingTrade || s.players.filter((p) => !p.bankrupt && p.id !== S.myId).length === 0 || !player || player.bankrupt;
   if (sig === mineSig) return;
   mineSig = sig;
-  if (!props.length) { list.innerHTML = '<p class="empty">Properties you buy will show up here.</p>'; return; }
-  list.innerHTML = props.map((id) => {
+  const debtNotice = debt ? `<div class="debt-notice"><span>You owe ${money(Math.abs(player.cash))}${debt.creditorId ? ` to ${esc(playerById(debt.creditorId)?.name || "another player")}` : " to the bank"}. Sell or mortgage assets to raise cash.</span><button id="declareBankruptcyBtn" class="btn-soft sm" type="button">Declare bankruptcy</button></div>` : "";
+  const propertyRows = props.map((id) => {
     const sp = S.BOARD[id];
     const o = s.ownership[id];
     const tint = sp.group ? GROUP_TINT[sp.group] : sp.type === "railroad" ? "#8a94ad" : "#5fc9e6";
     const badge = o.hotel ? "Hotel" : o.houses ? `${o.houses} house${o.houses > 1 ? "s" : ""}` : "";
     return `<button type="button" class="mine-row ${o.mortgaged ? "mortgaged" : ""}" data-id="${id}" style="--tint:${tint}"><i class="dot"></i><span class="mr-name">${esc(displayName(sp))}</span><span class="mr-meta">${o.mortgaged ? "Mortgaged" : badge}</span></button>`;
   }).join("");
+  list.innerHTML = `${debtNotice}${propertyRows || '<p class="empty">Properties you buy will show up here.</p>'}`;
+  $("declareBankruptcyBtn")?.addEventListener("click", () => act("declare_bankruptcy"));
   list.querySelectorAll(".mine-row").forEach((b) => { b.onclick = () => openProperty(Number(b.dataset.id)); });
 }
 
@@ -201,6 +204,9 @@ export function openProperty(id) {
   const owner = o ? playerById(o.ownerId) : null;
   const mineOwn = !!o && o.ownerId === S.myId;
   const canManage = mineOwn && s.started;
+  const resolvingDebt = s.pendingDebt?.playerId === S.myId;
+  const groupClear = !sp.group || !S.BOARD.some(other => other.group === sp.group && (s.ownership[other.id]?.houses > 0 || s.ownership[other.id]?.hotel));
+  const canSellDeed = canManage && resolvingDebt && !o?.mortgaged && groupClear;
   const tint = sp.group ? GROUP_TINT[sp.group] : "#5b4aa0";
   let body = "";
   if (sp.type === "property") {
@@ -230,6 +236,7 @@ export function openProperty(id) {
     <div class="prop-body">${ownerLine}${body}</div>
     ${canManage ? `<div class="prop-actions">
       ${sp.type === "property" ? '<button class="btn-primary sm" type="button" data-a="build_house">Build</button><button class="btn-soft sm" type="button" data-a="sell_house">Sell house</button>' : ""}
+      ${canSellDeed ? `<button class="btn-soft sm" type="button" data-a="sell_property">Sell deed +${money(sp.mortgage || Math.floor(sp.price / 2))}</button>` : ""}
       ${s.rules.mortgage ? `<button class="btn-soft sm" type="button" data-a="${o.mortgaged ? "unmortgage_property" : "mortgage_property"}">${o.mortgaged ? `Unmortgage ${money(Math.ceil(sp.mortgage * 1.1))}` : `Mortgage +${money(sp.mortgage)}`}</button>` : ""}
     </div>` : ""}`;
   $("propClose").onclick = () => dlg.close();

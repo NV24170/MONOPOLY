@@ -154,6 +154,7 @@ io.on("connection", (socket) => {
   action("auction_pass", (game) => game.auctionPass(playerId));
   action("build_house", (game, data) => game.buildHouse(playerId, data.spaceId));
   action("sell_house", (game, data) => game.sellHouse(playerId, data.spaceId));
+  action("sell_property", (game, data) => game.sellProperty(playerId, data.spaceId));
   action("mortgage_property", (game, data) => game.mortgageProperty(playerId, data.spaceId));
   action("unmortgage_property", (game, data) => game.unmortgageProperty(playerId, data.spaceId));
   action("propose_trade", (game, data) => game.proposeTrade(playerId, data.toId, data.offer));
@@ -162,6 +163,7 @@ io.on("connection", (socket) => {
   action("pay_jail_fine", (game) => game.payJailFine(playerId));
   action("use_jail_card", (game) => game.useJailCard(playerId));
   action("end_turn", (game) => game.endTurn(playerId));
+  action("declare_bankruptcy", (game) => game.declarePendingBankruptcy(playerId));
 
   socket.on("leave_room", (_, cb) => {
     leave();

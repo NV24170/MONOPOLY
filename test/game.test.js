@@ -168,7 +168,7 @@ test("a chance card landing on an unowned property leaves the player able to buy
   assert.equal(game.phase, "awaiting_buy");
 });
 
-test("card debt does not overwrite a game-over phase", () => {
+test("card debt pauses the game while the player raises cash", () => {
   const game = createGame();
   const player = game.getPlayer("p1");
   player.position = 7;
@@ -177,7 +177,9 @@ test("card debt does not overwrite a game-over phase", () => {
 
   game.resolveLanding(player);
 
-  assert.equal(game.phase, "gameover");
+  assert.equal(game.phase, "debt");
+  assert.equal(game.pendingDebt.playerId, "p1");
+  assert.equal(game.getPlayer("p1").bankrupt, false);
 });
 
 test("a GO TO JAIL card ends the current player's turn", () => {
@@ -202,7 +204,7 @@ test("the optional jail-rent rule suppresses rent owed to a jailed owner", () =>
   assert.equal(game.calculateRent(BOARD[1], game.ownership[1], [1, 2]), 0);
 });
 
-test("pay-each cards declare bankruptcy when the payer cannot pay everyone", () => {
+test("pay-each cards allow the payer to raise cash before bankruptcy", () => {
   const game = createGame();
   const player = game.getPlayer("p1");
   game.addPlayer("p3", "Player Three", "s3");
@@ -210,20 +212,77 @@ test("pay-each cards declare bankruptcy when the payer cannot pay everyone", () 
 
   game.applyCard(player, { action: "pay_each", amount: 40 });
 
-  assert.equal(player.bankrupt, true);
-  assert.equal(player.cash, 0);
+  assert.equal(player.bankrupt, false);
+  assert.equal(player.cash, -20);
+  assert.equal(game.pendingDebt.playerId, "p1");
   assert.equal(game.getPlayer("p3").cash, 1540);
 });
 
-test("collect-each cards declare bankruptcy for a player who cannot pay", () => {
+test("collect-each cards pause for an insolvent payer to raise cash", () => {
   const game = createGame();
   const collector = game.getPlayer("p1");
   game.getPlayer("p2").cash = 20;
 
   game.applyCard(collector, { action: "collect_each", amount: 50 });
 
-  assert.equal(game.getPlayer("p2").bankrupt, true);
+  assert.equal(game.getPlayer("p2").bankrupt, false);
+  assert.equal(game.pendingDebt.playerId, "p2");
   assert.equal(collector.cash, 1550);
+});
+
+test("a player can sell an unbuilt deed to the bank to clear pending debt", () => {
+  const game = createGame();
+  const player = game.getPlayer("p1");
+  player.properties = [5];
+  player.cash = -40;
+  game.ownership[5] = { ownerId: "p1", houses: 0, hotel: false, mortgaged: false };
+  game.started = true;
+  game.phase = "postroll";
+  game.checkBankruptOnDebt(player, 140, null);
+
+  assert.deepEqual(game.sellProperty("p1", 5), { ok: true, proceeds: BOARD[5].mortgage });
+  assert.equal(player.cash, 60);
+  assert.equal(player.bankrupt, false);
+  assert.equal(player.properties.includes(5), false);
+  assert.equal(game.ownership[5], undefined);
+  assert.equal(game.pendingDebt, null);
+  assert.equal(game.phase, "postroll");
+});
+
+test("queued debts are resolved in order without losing the turn phase", () => {
+  const game = createGame();
+  const first = game.getPlayer("p1");
+  const second = game.getPlayer("p2");
+  first.cash = -20;
+  second.cash = -30;
+  first.properties = [5];
+  second.properties = [15];
+  game.ownership[5] = { ownerId: "p1", houses: 0, hotel: false, mortgaged: false };
+  game.ownership[15] = { ownerId: "p2", houses: 0, hotel: false, mortgaged: false };
+  game.started = true;
+  game.phase = "postroll";
+  game.checkBankruptOnDebt(first, 1520, null);
+  game.checkBankruptOnDebt(second, 1530, null);
+
+  game.sellProperty("p1", 5);
+  assert.equal(game.pendingDebt.playerId, "p2");
+  assert.equal(game.phase, "debt");
+  game.sellProperty("p2", 15);
+  assert.equal(game.pendingDebt, null);
+  assert.equal(game.phase, "postroll");
+});
+
+test("the debtor can declare bankruptcy after choosing not to sell assets", () => {
+  const game = createGame();
+  const player = game.getPlayer("p1");
+  player.cash = -20;
+  game.started = true;
+  game.phase = "postroll";
+  game.checkBankruptOnDebt(player, 1520, game.getPlayer("p2"));
+
+  assert.deepEqual(game.declarePendingBankruptcy("p1"), { ok: true });
+  assert.equal(player.bankrupt, true);
+  assert.equal(game.pendingDebt, null);
 });
 
 test("auction bids must be whole-dollar amounts", () => {
@@ -256,17 +315,26 @@ test("a player who disconnects forfeits properties and can end the game", () => 
   assert.equal(game.phase, "gameover");
 });
 
-test("a jail fine cannot put a player into negative cash", () => {
+test("a player can raise cash to pay a jail fine before being bankrupted", () => {
   const game = createGame();
   game.started = true;
+  game.phase = "preroll";
   game.players[0].inJail = true;
   game.players[0].cash = 20;
+  game.players[0].properties = [5];
+  game.ownership[5] = { ownerId: "p1", houses: 0, hotel: false, mortgaged: false };
 
-  assert.match(game.payJailFine("p1").error, /enough cash/i);
-  assert.equal(game.players[0].cash, 20);
+  assert.deepEqual(game.payJailFine("p1"), { ok: true, pendingDebt: true });
+  assert.equal(game.players[0].cash, -30);
+  assert.equal(game.players[0].inJail, true);
+  assert.deepEqual(game.sellProperty("p1", 5), { ok: true, proceeds: BOARD[5].mortgage });
+  assert.equal(game.players[0].cash, 70);
+  assert.equal(game.players[0].inJail, false);
+  assert.equal(game.pendingDebt, null);
+  assert.equal(game.phase, "preroll");
 });
 
-test("a player who goes bankrupt on their own roll passes the turn to the next player", () => {
+test("a player who cannot pay rent pauses their turn for liquidation", () => {
   const game = createGame();
   game.addPlayer("p3", "Player Three", "s3");
   game.started = true;
@@ -286,9 +354,10 @@ test("a player who goes bankrupt on their own roll passes the turn to the next p
     Math.random = realRandom;
   }
 
-  assert.equal(roller.bankrupt, true);
-  assert.equal(game.currentPlayer().id, "p2");
-  assert.equal(game.phase, "preroll");
+  assert.equal(roller.bankrupt, false);
+  assert.equal(game.currentPlayer().id, "p1");
+  assert.equal(game.phase, "debt");
+  assert.equal(game.pendingDebt.playerId, "p1");
 });
 
 test("bots fill empty seats and give a seat back to a joining human", () => {
