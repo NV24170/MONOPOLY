@@ -983,14 +983,8 @@ class Game {
     this.emit("bankrupt", { playerId: player.id, creditorId: creditor?.id || null });
     if (creditor) {
       creditor.cash += Math.max(player.cash, 0);
-      player.properties.forEach(id => {
-        this.ownership[id].ownerId = creditor.id;
-        creditor.properties.push(id);
-      });
-    } else {
-      // bankrupt to the bank: properties return unowned
-      player.properties.forEach(id => { delete this.ownership[id]; });
     }
+    player.properties.forEach(id => { delete this.ownership[id]; });
     player.properties = [];
     player.cash = 0;
 

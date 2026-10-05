@@ -276,12 +276,19 @@ test("the debtor can declare bankruptcy after choosing not to sell assets", () =
   const game = createGame();
   const player = game.getPlayer("p1");
   player.cash = -20;
+  player.properties = [5, 15];
+  game.ownership[5] = { ownerId: "p1", houses: 0, hotel: false, mortgaged: false };
+  game.ownership[15] = { ownerId: "p1", houses: 0, hotel: false, mortgaged: true };
   game.started = true;
   game.phase = "postroll";
   game.checkBankruptOnDebt(player, 1520, game.getPlayer("p2"));
 
   assert.deepEqual(game.declarePendingBankruptcy("p1"), { ok: true });
   assert.equal(player.bankrupt, true);
+  assert.deepEqual(player.properties, []);
+  assert.equal(game.ownership[5], undefined);
+  assert.equal(game.ownership[15], undefined);
+  assert.deepEqual(game.getPlayer("p2").properties, []);
   assert.equal(game.pendingDebt, null);
 });
 
