@@ -7,7 +7,7 @@ Real-time multiplayer Monopoly (Node.js + Express + Socket.io) with a richup.io-
 npm install
 npm start
 ```
-Open http://localhost:3000. Use several tabs to test with multiple players (each tab is its own player).
+Open http://localhost:3000. Use several tabs to test with multiple players (each tab is its own player) plz marks.
 
 ## Deploy to Render
 **Blueprint (fastest):** push this folder to GitHub, then Render -> New -> Blueprint -> pick the repo. It reads `render.yaml`.
